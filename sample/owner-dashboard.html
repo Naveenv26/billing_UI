@@ -1,0 +1,131 @@
+<!-- owner-dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Owner Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="https://angular.io/assets/images/logos/angular/angular.svg">
+</head>
+<body class="bg-[#e6f0fa] min-h-screen font-sans flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow p-4 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <img src="https://angular.io/assets/images/logos/angular/angular.svg" class="w-8 h-8" alt="Logo">
+      <span class="font-bold text-gray-800">Owner Dashboard</span>
+    </div>
+    <a href="login.html" class="text-red-500 font-medium hover:underline">Logout</a>
+  </nav>
+
+  <!-- Main -->
+  <main class="flex-1 p-6 space-y-6">
+    <!-- Search Bar -->
+    <div class="flex items-center gap-3">
+      <input 
+        id="searchInput" 
+        type="text" 
+        placeholder="Search company..."
+        class="flex-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-blue-200"
+      />
+      <button onclick="filterTable()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Search</button>
+    </div>
+
+    <!-- Customer Table -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <table class="w-full text-left border-collapse">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-3">Company Name</th>
+            <th class="p-3">Status</th>
+            <th class="p-3">Days Left</th>
+            <th class="p-3">Daily Profit</th>
+            <th class="p-3">Weekly Profit</th>
+            <th class="p-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="customerTable">
+          <!-- Rows added via JS -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Company Detail Modal -->
+  <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
+      <button onclick="closeModal()" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">&times;</button>
+      <h2 id="modalCompanyName" class="text-xl font-bold mb-4"></h2>
+      <div id="modalContent" class="space-y-3 text-gray-700"></div>
+    </div>
+  </div>
+
+  <script>
+    const customers = [
+      { name: "ABC Traders", status: "Active", daysLeft: 15, dailyProfit: 1200, weeklyProfit: 8400, region: "North Zone", newCustomers: 8, existingCustomers: 45 },
+      { name: "XYZ Stores", status: "Expired", daysLeft: 0, dailyProfit: 800, weeklyProfit: 5600, region: "South Zone", newCustomers: 3, existingCustomers: 30 },
+      { name: "FreshMart", status: "Active", daysLeft: 22, dailyProfit: 1500, weeklyProfit: 10500, region: "West Zone", newCustomers: 12, existingCustomers: 60 },
+      { name: "City Grocers", status: "Active", daysLeft: 5, dailyProfit: 950, weeklyProfit: 6650, region: "East Zone", newCustomers: 5, existingCustomers: 25 },
+      { name: "SuperBazaar", status: "Active", daysLeft: 10, dailyProfit: 2000, weeklyProfit: 14000, region: "Central Zone", newCustomers: 15, existingCustomers: 80 }
+    ];
+
+    function loadCustomers(list = customers) {
+      const table = document.getElementById("customerTable");
+      table.innerHTML = "";
+      list.forEach(cust => {
+        table.innerHTML += `
+          <tr class="border-b hover:bg-gray-50">
+            <td class="p-3 text-blue-600 cursor-pointer" onclick="showDetails('${cust.name}')">${cust.name}</td>
+            <td class="p-3">
+              <span class="${cust.status === 'Active' ? 'text-green-600' : 'text-red-600'} font-medium">
+                ${cust.status}
+              </span>
+            </td>
+            <td class="p-3">${cust.daysLeft} days</td>
+            <td class="p-3">₹${cust.dailyProfit}</td>
+            <td class="p-3">₹${cust.weeklyProfit}</td>
+            <td class="p-3">
+              <button onclick="showDetails('${cust.name}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg">View</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function filterTable() {
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const filtered = customers.filter(c => c.name.toLowerCase().includes(search));
+      loadCustomers(filtered);
+    }
+
+    function showDetails(name) {
+      const cust = customers.find(c => c.name === name);
+      if (!cust) return;
+
+      document.getElementById("modalCompanyName").textContent = cust.name;
+      document.getElementById("modalContent").innerHTML = `
+        <p><strong>Status:</strong> ${cust.status}</p>
+        <p><strong>Days Left:</strong> ${cust.daysLeft}</p>
+        <p><strong>Daily Profit:</strong> ₹${cust.dailyProfit}</p>
+        <p><strong>Weekly Profit:</strong> ₹${cust.weeklyProfit}</p>
+        <p><strong>Region:</strong> ${cust.region}</p>
+        <p><strong>New Customers:</strong> ${cust.newCustomers}</p>
+        <p><strong>Existing Customers:</strong> ${cust.existingCustomers}</p>
+        <p><strong>Marketing Suggestion:</strong> ${
+          cust.status === "Active" 
+          ? "Offer a weekend discount to boost sales."
+          : "Renew subscription to restart sales tracking."
+        }</p>
+      `;
+      document.getElementById("detailModal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("detailModal").classList.add("hidden");
+    }
+
+    loadCustomers();
+  </script>
+</body>
+</html>
