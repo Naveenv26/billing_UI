@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Customer Dashboard - Subscription States</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="icon" href="https://angular.io/assets/images/logos/angular/angular.svg">
+  <style>
+    /* Horizontal water (stock) meter */
+    .water-container {
+      position: relative;
+      width: 100%;
+      height: 100px;
+      border-radius: 50px;
+      overflow: hidden;
+      border: 4px solid #0f172a;
+      background-color: #f0f9ff;
+    }
+    .water-fill {
+      position: absolute;
+      left: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #7878deff, #7ee163ff);
+      animation: fillWaterHorizontal 2s ease-out forwards;
+      width: var(--fill-level, 0%);
+    }
+    @keyframes fillWaterHorizontal {
+      from { width: 0%; }
+      to { width: var(--fill-level); }
+    }
+    .water-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+    }
+
+    /* Overlay: will be dynamically positioned below the global bar */
+    .overlay {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none; /* controlled by JS */
+      align-items: center;
+      justify-content: center;
+      z-index: 40; /* below global bar (z-50) but above page */
+    }
+    .overlay.show { display: flex; }
+  </style>
+</head>
+<body class="bg-[#e6f0fa] min-h-screen font-sans flex flex-col">
+
+  <!-- GLOBAL CONTROL BAR (always on top, not blocked) -->
+  <div id="globalBar" class="bg-white shadow p-3 flex flex-wrap gap-3 justify-center sticky top-0 z-50">
+    <button onclick="setSubscriptionState(1)"
+            class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+      Continue as Normal
+    </button>
+    <button onclick="setSubscriptionState(2)"
+            class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+      1 Week Before End (Demo 10sec)
+    </button>
+    <button onclick="setSubscriptionState(3)"
+            class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+      Subscription Ends
+    </button>
+  </div>
+ 
+  <!-- Navbar -->
+  <nav class="bg-white shadow p-4 flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+    <div class="flex items-center space-x-3">
+      <img src="https://angular.io/assets/images/logos/angular/angular.svg" class="w-8 h-8" alt="Logo">
+      <span class="font-bold text-gray-800 text-xl">Billing App - Customer</span>
+      <!-- Countdown badge (shown only in state 2) -->
+      <span id="countdownBadge"
+            class="hidden ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+        Expires in <span id="countdownText" class="ml-1 font-semibold">—</span>
+      </span>
+      <div class="flex justify-end">
+  <button onclick="togglePlansModal(true)"
+    class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2 rounded-lg shadow">
+    Subscription Plan / Upgrade Plan
+  </button>
+</div>
+
+<!-- Subscription Plans Modal -->
+<div id="plansModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+  <div class="bg-white rounded-xl shadow-2xl p-6 w-[95%] max-w-5xl relative">
+    <!-- Close Button -->
+    <button onclick="togglePlansModal(false)" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+      ✕
+    </button>
+
+    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Choose Your Plan</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Basic Plan -->
+      <div class="border border-indigo-500 rounded-lg p-5 flex flex-col items-center shadow hover:shadow-lg transition bg-indigo-50">
+        <h3 class="text-xl font-bold text-gray-800">Basic</h3>
+        <p class="text-gray-500">₹99 / month</p>
+        <ul class="mt-4 space-y-2 text-sm text-gray-700 list-disc list-inside">
+          <li>Billing Management</li>
+          <li>Weekly & Monthly Reports</li>
+          <li>Stock Maintenance</li>
+        </ul>
+        <button class="mt-6 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+          Select Basic
+        </button>
+      </div>
+
+      <!-- Pro Plan -->
+      <div class="border-2 rounded-lg p-5 flex flex-col items-center shadow-lg hover:shadow-xl transition ">
+        <h3 class="text-xl font-bold text-gray-800">Pro</h3>
+        <p class="text-gray-500">₹199 / month</p>
+        <ul class="mt-4 space-y-2 text-sm text-gray-700 list-disc list-inside">
+          <li>Everything in Basic</li>
+          <li>Advanced Report Customization</li>
+          <li>Choose report format: Pie, Bar, Line, etc.</li>
+          <li>Interactive Graphs & Data Insights</li>
+        </ul>
+        <button class="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+          Select Pro
+        </button>
+      </div>
+
+      <!-- Premium Plan -->
+      <div class="border rounded-lg p-5 flex flex-col items-center shadow hover:shadow-lg transition">
+        <h3 class="text-xl font-bold text-gray-800">Premium</h3>
+        <p class="text-gray-500">₹249 / month</p>
+        <ul class="mt-4 space-y-2 text-sm text-gray-700 list-disc list-inside">
+          <li>Everything in Basic & Pro</li>
+          <li>WhatsApp Billing Integration</li>
+          <li>Upcoming Features & Early Access</li>
+        </ul>
+        <button class="mt-6 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+          Select Premium
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+    </div>
+    <a href="login.html" class="text-red-500 font-medium hover:underline">Logout</a>
+  </nav>
+
+  <!-- Main -->
+  <main class="flex-1 p-6 space-y-6">
+
+    <!-- Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white shadow rounded-xl p-4">
+        <h2 class="text-lg font-semibold text-gray-700 mb-2">Most Sold Product</h2>
+        <p class="text-2xl font-bold text-blue-600" id="mostSoldProduct">Loading...</p>
+      </div>
+      <div class="bg-white shadow rounded-xl p-4">
+        <h2 class="text-lg font-semibold text-gray-700 mb-2">Total Earnings</h2>
+        <p class="text-2xl font-bold text-green-600" id="totalEarnings">₹0</p>
+      </div>
+    </div>
+
+    <!-- Stock Meter + Nav Buttons -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+      <!-- Left: Water Stock Meter -->
+      <div class="flex justify-center">
+        <div class="water-container max-w-lg" id="stockMeter">
+          <div class="water-fill" id="waterFill" style="--fill-level:75%"></div>
+          <div class="water-text" id="waterText">75%</div>
+        </div>
+      </div>
+
+      <!-- Right: Navigation Buttons -->
+      <div class="flex flex-col gap-4 items-center justify-center h-full">
+        <a href="stock.html" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-4 px-6 rounded-lg text-center shadow transition duration-200 w-56">
+          📦 Stock Maintenance
+        </a>
+        <a href="billing.html" class="bg-green-500 hover:bg-green-600 text-white font-medium py-4 px-6 rounded-lg text-center shadow transition duration-200 w-56">
+          🧾 Billing
+        </a>
+        <a href="reports.html" class="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-4 px-6 rounded-lg text-center shadow transition duration-200 w-56">
+          📊 Reports
+        </a>
+      </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Weekly Earnings -->
+      <div class="bg-white shadow rounded-xl p-4">
+        <h2 class="text-lg font-semibold text-gray-700 mb-3">Weekly Earnings (₹)</h2>
+        <canvas id="weeklySales" height="100"></canvas>
+      </div>
+      <!-- Monthly Earnings -->
+      <div class="bg-white shadow rounded-xl p-4">
+        <h2 class="text-lg font-semibold text-gray-700 mb-3">Monthly Earnings (₹)</h2>
+        <canvas id="monthlySales" height="100"></canvas>
+      </div>
+    </div>
+  </main>
+
+  <!-- Subscription Blocking Overlay (does NOT cover global bar) -->
+  <div id="subscriptionOverlay" class="overlay">
+    <div class="bg-white rounded-lg p-6 w-[95%] max-w-md text-center shadow-2xl">
+      <h2 class="text-2xl font-bold text-red-600">Subscription Expired</h2>
+      <p class="mt-2 text-gray-700">You cannot access the app because your subscription has ended.</p>
+      <p class="mt-1 text-gray-600">Renew to continue using all features.</p>
+
+      <div class="mt-5 grid gap-3 text-left">
+        <div class="border rounded-lg p-3">
+          <p class="font-semibold">Basic</p>
+          <p class="text-gray-600">₹99 / month</p>
+        </div>
+        <div class="border rounded-lg p-3">
+          <p class="font-semibold">Pro</p>
+          <p class="text-gray-600">₹199 / month</p>
+        </div>
+        <div class="border rounded-lg p-3">
+          <p class="font-semibold">Premium</p>
+          <p class="text-gray-600">₹299 / month</p>
+        </div>
+      </div>
+
+      <button onclick="alert('This is a demo. Payment won\\'t unlock until you change the global state.')"
+              class="mt-5 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+        Renew Now
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ------------------ Demo Data ------------------ */
+    const stockPercent = 76; // stock level in %
+    const mostSold = { name: "Parle-G Biscuits", qty: 340 };
+    const earningsTotal = 125000; // total earnings (just to display)
+
+    // Weekly earnings (Mon..Sun) in ₹
+    const weeklyEarnings = [8200, 10400, 9600, 11350, 15200, 17800, 13100];
+
+    // Monthly earnings (Jan..Dec) in ₹
+    const monthlyEarnings = [92000, 101500, 97500, 110000, 124500, 118000, 132500, 127000, 139500, 151000, 158500, 165000];
+
+    /* ------------------ Init Cards ------------------ */
+    document.getElementById('mostSoldProduct').textContent =
+      `${mostSold.name} (${mostSold.qty} sold)`;
+    document.getElementById('totalEarnings').textContent =
+      `₹${earningsTotal.toLocaleString('en-IN')}`;
+
+    // Animate water fill
+    const fillElement = document.getElementById("waterFill");
+    fillElement.style.setProperty("--fill-level", stockPercent + "%");
+    document.getElementById("waterText").textContent = stockPercent + "%";
+
+    /* ------------------ Charts ------------------ */
+    const rupeeTick = (v) => '₹' + Number(v).toLocaleString('en-IN');
+
+    // Weekly Earnings Chart
+    new Chart(document.getElementById('weeklySales'), {
+      type: 'line',
+      data: {
+        labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+        datasets: [{
+          label: "Earnings (₹)",
+          data: weeklyEarnings,
+          fill: false,
+          borderColor: "#3b82f6",
+          pointBackgroundColor: "#b4db81ff",
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: rupeeTick } }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `Earnings: ${rupeeTick(ctx.parsed.y)}`
+            }
+          }
+        }
+      }
+    });
+
+    // Monthly Earnings Chart
+    new Chart(document.getElementById('monthlySales'), {
+      type: 'line',
+      data: {
+        labels: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+        datasets: [{
+          label: "Earnings (₹)",
+          data: monthlyEarnings,
+          fill: false,
+          borderColor: "#3b82f6",
+          pointBackgroundColor: "#e6b78dff",
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: rupeeTick } }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `Earnings: ${rupeeTick(ctx.parsed.y)}`
+            }
+          }
+        }
+      }
+    });
+
+    /* ------------------ Subscription State Logic ------------------ */
+    // 1 = normal, 2 = about to end (countdown), 3 = ended (blocked)
+    let subscriptionState = 1;
+    let countdownInterval = null;
+    let expiryAt = null; // Date.now() + 90_000
+
+    const overlay = document.getElementById('subscriptionOverlay');
+    const globalBar = document.getElementById('globalBar');
+    const countdownBadge = document.getElementById('countdownBadge');
+    const countdownText = document.getElementById('countdownText');
+
+    // Position overlay below the global bar
+    function positionOverlay() {
+      const top = globalBar.getBoundingClientRect().height;
+      overlay.style.top = `${top}px`;
+    }
+    window.addEventListener('resize', positionOverlay);
+    window.addEventListener('load', positionOverlay);
+
+    function setSubscriptionState(state) {
+      subscriptionState = state;
+
+      // Clear any existing countdown
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+
+      if (state === 1) {
+        // Normal
+        countdownBadge.classList.add('hidden');
+        overlay.classList.remove('show');
+      }
+      else if (state === 2) {
+        // About to end: start a 1:30 countdown
+        alert("⚠️ Your subscription will end in 7 days. Please renew to avoid interruption.");
+        expiryAt = Date.now() + 10_000; // 90 seconds demo
+        countdownBadge.classList.remove('hidden');
+        overlay.classList.remove('show');
+        tickCountdown(); // update immediately
+        countdownInterval = setInterval(() => {
+          tickCountdown();
+        }, 250); // smooth ticking
+      }
+      else if (state === 3) {
+        // Ended: show overlay (blocking), Renew won’t close it
+        countdownBadge.classList.add('hidden');
+        positionOverlay();
+        overlay.classList.add('show');
+      }
+    }
+
+    function tickCountdown() {
+      const remainingMs = Math.max(0, expiryAt - Date.now());
+      const totalSec = Math.floor(remainingMs / 1000);
+      const days = Math.floor(totalSec / 86400);
+      const hrs = Math.floor((totalSec % 86400) / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+
+      countdownText.textContent =
+        `${days}d ${hrs}h ${mins}m ${secs}s`;
+
+      if (remainingMs <= 0) {
+        // Auto-switch to ended
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        setSubscriptionState(3);
+      }
+    }
+
+    function togglePlansModal(show) {
+    document.getElementById('plansModal').classList.toggle('hidden', !show);
+    document.getElementById('plansModal').classList.toggle('flex', show);
+  }
+
+    // Initialize as Normal on load
+    setSubscriptionState(1);
+  </script>
+</body>
+</html>

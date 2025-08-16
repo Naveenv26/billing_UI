@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow p-4 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <span class="font-bold text-gray-800">Billing</span>
+    </div>
+    <div class="space-x-3">
+      <button onclick="showProducts()" class="bg-purple-500 text-white px-3 py-1 rounded-lg">Show Products</button>
+      <a href="customer-dashboard.html" class="text-blue-500 font-medium hover:underline">⬅ Back</a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="flex-1 p-6 space-y-6">
+
+    <!-- Search -->
+    <div class="flex space-x-2">
+      <input id="searchInput" type="text" placeholder="Search product..."
+        class="flex-1 border border-gray-300 rounded-lg px-4 py-2">
+      <button onclick="searchProduct()" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Search</button>
+    </div>
+
+    <!-- Search Results -->
+    <div id="searchResults" class="bg-white shadow rounded-lg p-4 hidden">
+      <h3 class="font-semibold text-gray-700 mb-2">Search Results</h3>
+      <ul id="resultsList" class="space-y-2"></ul>
+    </div>
+
+    <!-- Billing Table -->
+    <div class="bg-white shadow rounded-lg p-4">
+      <h3 class="font-semibold text-gray-700 mb-4">Billing List</h3>
+      <table class="w-full border-collapse">
+        <thead>
+          <tr class="bg-gray-100 text-gray-700">
+            <th class="p-3 text-left">Product</th>
+            <th class="p-3 text-left">Price</th>
+            <th class="p-3 text-left">Quantity</th>
+            <th class="p-3 text-left">Total</th>
+            <th class="p-3 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="billingTable"></tbody>
+      </table>
+      <div class="flex justify-end mt-4">
+        <span class="text-lg font-bold">Total: ₹<span id="grandTotal">0</span></span>
+      </div>
+      <div class="flex justify-end mt-2">
+        <button id="finalizeBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">Finalize Bill</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Products Modal -->
+  <div id="productsModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-96">
+      <h2 class="text-lg font-bold mb-4">Available Products</h2>
+      <table class="w-full border-collapse border border-gray-300">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="p-2 border">Name</th>
+            <th class="p-2 border">Qty</th>
+            <th class="p-2 border">Price</th>
+          </tr>
+        </thead>
+        <tbody id="productsTable"></tbody>
+      </table>
+      <div class="mt-4 text-right">
+        <button onclick="closeProductsModal()" class="bg-red-500 text-white px-4 py-2 rounded-lg">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bill Modal -->
+  <div id="billModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-96">
+      <h2 class="text-lg font-bold mb-4">Final Bill</h2>
+      <div id="billDetails"></div>
+      <div class="mt-4 text-right">
+        <button onclick="closeBillModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let products = [
+      { name: "Lays", qty: 20, price: 5 },
+      { name: "Biscuit", qty: 50, price: 10 },
+      { name: "Icecream", qty: 38, price: 40 }
+    ];
+    let billingList = [];
+
+    function searchProduct() {
+      const term = document.getElementById("searchInput").value.trim().toLowerCase();
+      const results = products.filter(p => p.name.toLowerCase().includes(term) && p.qty > 0);
+      const resultsList = document.getElementById("resultsList");
+      resultsList.innerHTML = "";
+
+      if (results.length > 0) {
+        document.getElementById("searchResults").classList.remove("hidden");
+        results.forEach(p => {
+          resultsList.innerHTML += `
+            <li class="flex justify-between items-center border p-2 rounded-lg">
+              <span>${p.name} (₹${p.price}) - Stock: ${p.qty}</span>
+              <button onclick="addToBilling('${p.name}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg">Add</button>
+            </li>
+          `;
+        });
+      } else {
+        document.getElementById("searchResults").classList.remove("hidden");
+        resultsList.innerHTML = `<li class="text-gray-500">No products found or out of stock.</li>`;
+      }
+    }
+
+    function showProducts() {
+      const table = document.getElementById("productsTable");
+      table.innerHTML = products.map(p => `
+        <tr>
+          <td class="p-2 border">${p.name}</td>
+          <td class="p-2 border">${p.qty}</td>
+          <td class="p-2 border">₹${p.price}</td>
+        </tr>
+      `).join("");
+      document.getElementById("productsModal").classList.remove("hidden");
+    }
+
+    function closeProductsModal() {
+      document.getElementById("productsModal").classList.add("hidden");
+    }
+
+    function addToBilling(productName) {
+      const product = products.find(p => p.name === productName);
+      if (!product || product.qty <= 0) return;
+
+      const existing = billingList.find(item => item.name === productName);
+      if (existing) {
+        if (existing.qty < product.qty) existing.qty++;
+      } else {
+        billingList.push({ name: product.name, price: product.price, qty: 1 });
+      }
+      renderBilling();
+    }
+
+    function updateQty(index, change) {
+      const product = products.find(p => p.name === billingList[index].name);
+      if (change > 0 && billingList[index].qty < product.qty) {
+        billingList[index].qty++;
+      } else if (change < 0 && billingList[index].qty > 1) {
+        billingList[index].qty--;
+      }
+      renderBilling();
+    }
+
+    function removeItem(index) {
+      billingList.splice(index, 1);
+      renderBilling();
+    }
+
+    function renderBilling() {
+      const table = document.getElementById("billingTable");
+      table.innerHTML = "";
+      let total = 0;
+
+      billingList.forEach((item, idx) => {
+        const rowTotal = item.price * item.qty;
+        total += rowTotal;
+        table.innerHTML += `
+          <tr class="border-b">
+            <td class="p-3">${item.name}</td>
+            <td class="p-3">₹${item.price}</td>
+            <td class="p-3 flex items-center space-x-2">
+              <button onclick="updateQty(${idx}, -1)" class="bg-gray-300 px-2 rounded-lg">-</button>
+              <span>${item.qty}</span>
+              <button onclick="updateQty(${idx}, 1)" class="bg-gray-300 px-2 rounded-lg">+</button>
+            </td>
+            <td class="p-3">₹${rowTotal}</td>
+            <td class="p-3">
+              <button onclick="removeItem(${idx})" class="bg-red-500 text-white px-3 py-1 rounded-lg">Remove</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      document.getElementById("grandTotal").textContent = total;
+    }
+
+    document.getElementById("finalizeBtn").addEventListener("click", () => {
+      if (!billingList.length) return alert("No items in billing list");
+
+      products.forEach(p => {
+        const soldItem = billingList.find(b => b.name === p.name);
+        if (soldItem) p.qty -= soldItem.qty;
+      });
+
+      showBillModal();
+
+      setTimeout(() => {
+        billingList = [];
+        renderBilling();
+      }, 500);
+    });
+
+    function showBillModal() {
+      const billDetails = document.getElementById("billDetails");
+      const total = billingList.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      billDetails.innerHTML = `
+        <table class="w-full border-collapse border">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="p-2 border">Product</th>
+              <th class="p-2 border">Qty</th>
+              <th class="p-2 border">Price</th>
+              <th class="p-2 border">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${billingList.map(item => `
+              <tr>
+                <td class="p-2 border">${item.name}</td>
+                <td class="p-2 border">${item.qty}</td>
+                <td class="p-2 border">₹${item.price}</td>
+                <td class="p-2 border">₹${item.price * item.qty}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div class="text-right font-bold mt-4">Grand Total: ₹${total}</div>
+      `;
+      document.getElementById("billModal").classList.remove("hidden");
+    }
+
+    function closeBillModal() {
+      document.getElementById("billModal").classList.add("hidden");
+    }
+  </script>
+</body>
+</html>

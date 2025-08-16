@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reports</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="icon" href="https://angular.io/assets/images/logos/angular/angular.svg">
+</head>
+<body class="bg-[#e6f0fa] min-h-screen font-sans flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow p-4 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <img src="https://angular.io/assets/images/logos/angular/angular.svg" class="w-8 h-8" alt="Logo">
+      <span class="font-bold text-gray-800">Reports</span>
+    </div>
+    <a href="customer-dashboard.html" class="text-blue-500 font-medium hover:underline">⬅ Back</a>
+  </nav>
+
+  <!-- Title -->
+  <div class="bg-black text-white p-4 text-center">
+    <h1 class="text-2xl font-bold">Sales and Performance Reports</h1>
+    <p class="text-sm mt-2">Analyze your sales, product performance, customer engagement, and profitability.</p>
+  </div>
+
+  <!-- Reports Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 max-w-7xl mx-auto">
+
+    <!-- Sales Reports (smaller) -->
+    <div class="bg-white shadow rounded-xl p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-3">Sales Reports</h2>
+      <div class="relative h-48"> <!-- fixed height container -->
+        <canvas id="salesReportChart" class="absolute inset-0"></canvas>
+      </div>
+    </div>
+
+    <!-- Product Performance (smaller) -->
+    <div class="bg-white shadow rounded-xl p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-3">Product Performance</h2>
+      <div class="relative h-48">
+        <canvas id="productPerformanceChart" class="absolute inset-0"></canvas>
+      </div>
+    </div>
+
+    <!-- Customer Reports (smaller) -->
+    <div class="bg-white shadow rounded-xl p-4">
+      <h2 class="text-lg font-semibold text-gray-700 mb-3">Customer Reports</h2>
+      <div class="relative h-48">
+        <canvas id="customerReportChart" class="absolute inset-0"></canvas>
+      </div>
+    </div>
+
+    <!-- Profitability & Cost (bigger bar) -->
+    <div class="bg-white shadow rounded-xl p-4 ">
+      <h2 class="text-lg font-semibold text-gray-700 mb-3">Profitability & Cost</h2>
+      <div class="relative h-48"> <!-- bigger height -->
+        <canvas id="profitCostChart" class="absolute inset-0"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ---------- Helpers ----------
+    const chartColors = ["#3b82f6", "#f97316", "#10b981", "#f43f5e", "#a855f7", "#14b8a6"];
+    const rupee = n => '₹' + Number(n).toLocaleString('en-IN');
+
+    // prevent duplicate instances (and any re-init loops)
+    window._charts = window._charts || {};
+    function makeChart(id, config) {
+      if (window._charts[id]) window._charts[id].destroy();
+      const ctx = document.getElementById(id).getContext('2d');
+      const c = new Chart(ctx, {
+        ...config,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,   // fill the fixed-height container
+          resizeDelay: 150,             // debounce resize
+          animation: { duration: 400 },
+          plugins: { legend: { position: 'top', labels: { boxWidth: 12 } }, ...(config.options?.plugins || {}) },
+          scales: { ...(config.options?.scales || {}) }
+        }
+      });
+      window._charts[id] = c;
+      return c;
+    }
+
+    // ---------- Charts ----------
+    // Sales Reports - doughnut (small)
+    makeChart('salesReportChart', {
+      type: 'doughnut',
+      data: {
+        labels: ["Morning Sales", "Afternoon Sales", "Evening Sales"],
+        datasets: [{ data: [12000, 18000, 15000], backgroundColor: chartColors }]
+      }
+    });
+
+    // Product Performance - polarArea (small)
+    makeChart('productPerformanceChart', {
+      type: 'polarArea',
+      data: {
+        labels: ["Biscuits", "Soft Drinks", "Chocolates", "Snacks"],
+        datasets: [{ data: [400, 350, 280, 150], backgroundColor: chartColors }]
+      }
+    });
+
+    // Customer Reports - pie (small)
+    makeChart('customerReportChart', {
+      type: 'pie',
+      data: {
+        labels: ["New Customers", "Returning Customers"],
+        datasets: [{ data: [120, 80], backgroundColor: chartColors }]
+      }
+    });
+
+    // Profitability & Cost - bar (bigger + clean legend)
+    makeChart('profitCostChart', {
+      type: 'bar',
+      data: {
+        labels: ["Profit", "Cost of Goods"],
+        datasets: [{
+          label: "Amount",
+          data: [65000, 35000],
+          backgroundColor: [chartColors[0], chartColors[1]],
+          
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => rupee(ctx.parsed.y) } }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: v => rupee(v) } }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
