@@ -1,123 +1,199 @@
-<!-- owner-dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Owner Dashboard</title>
+  <title>Owner Dashboard — Billing App</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" href="https://angular.io/assets/images/logos/angular/angular.svg">
 </head>
-<body class="bg-[#e6f0fa] min-h-screen font-sans flex flex-col">
+<body class="bg-slate-50 min-h-screen font-sans">
 
-  <!-- Navbar -->
-  <nav class="bg-white shadow p-4 flex justify-between items-center">
-    <div class="flex items-center space-x-3">
-      <img src="https://angular.io/assets/images/logos/angular/angular.svg" class="w-8 h-8" alt="Logo">
-      <span class="font-bold text-gray-800">Owner Dashboard</span>
+  <nav class="bg-white shadow-sm sticky top-0 z-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center py-3">
+            <div class="flex items-center space-x-3">
+                <img src="https://angular.io/assets/images/logos/angular/angular.svg" class="w-8 h-8" alt="Logo">
+                <span class="font-bold text-xl text-slate-800">Owner Dashboard</span>
+            </div>
+            <a href="login.html" class="text-sm font-medium text-rose-500 hover:text-rose-700">Logout</a>
+        </div>
     </div>
-    <a href="login.html" class="text-red-500 font-medium hover:underline">Logout</a>
   </nav>
 
-  <!-- Main -->
-  <main class="flex-1 p-6 space-y-6">
-    <!-- Search Bar -->
-    <div class="flex items-center gap-3">
-      <input 
-        id="searchInput" 
-        type="text" 
-        placeholder="Search company..."
-        class="flex-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring focus:ring-blue-200"
-      />
-      <button onclick="filterTable()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Search</button>
+  <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">Customer Overview</h1>
+        <p class="text-sm text-slate-500">Monitor your clients' subscription status and performance.</p>
     </div>
 
-    <!-- Customer Table -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-      <table class="w-full text-left border-collapse">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="p-3">Company Name</th>
-            <th class="p-3">Status</th>
-            <th class="p-3">Days Left</th>
-            <th class="p-3">Daily Profit</th>
-            <th class="p-3">Weekly Profit</th>
-            <th class="p-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="customerTable">
-          <!-- Rows added via JS -->
-        </tbody>
-      </table>
+    <div class="bg-white p-4 rounded-2xl shadow flex flex-col sm:flex-row items-center gap-4">
+        <div class="flex items-center gap-2" id="filter-buttons">
+            <button onclick="filterCustomers({ status: 'all' }, this)" class="bg-indigo-600 text-white px-3 py-1.5 text-sm font-medium rounded-lg">All</button>
+            <button onclick="filterCustomers({ status: 'Active' }, this)" class="bg-white text-slate-600 px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-slate-100">Active</button>
+            <button onclick="filterCustomers({ status: 'Expiring Soon' }, this)" class="bg-white text-slate-600 px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-slate-100">Expiring Soon</button>
+            <button onclick="filterCustomers({ status: 'Expired' }, this)" class="bg-white text-slate-600 px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-slate-100">Expired</button>
+        </div>
+        <input 
+            id="searchInput" 
+            type="text" 
+            onkeyup="filterCustomers()"
+            placeholder="Search by company name..."
+            class="flex-1 w-full sm:w-auto p-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-200 text-sm"
+        />
     </div>
+
+    <div id="customerGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      </div>
   </main>
 
-  <!-- Company Detail Modal -->
-  <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
-      <button onclick="closeModal()" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">&times;</button>
-      <h2 id="modalCompanyName" class="text-xl font-bold mb-4"></h2>
-      <div id="modalContent" class="space-y-3 text-gray-700"></div>
+  <div id="detailModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
+        <div class="p-6 border-b flex justify-between items-start">
+            <div>
+                <h2 id="modalCompanyName" class="text-xl font-bold text-slate-800">Company Name</h2>
+                <p id="modalCompanyPlan" class="text-sm font-medium text-indigo-600">Plan Type</p>
+            </div>
+            <button onclick="closeModal()" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
+        </div>
+        <div id="modalContent" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            </div>
+        <div class="p-4 bg-slate-50 rounded-b-2xl">
+             <div id="modalSuggestion" class="text-sm p-3 bg-indigo-50 text-indigo-800 rounded-lg"></div>
+        </div>
     </div>
   </div>
 
   <script>
-    const customers = [
-      { name: "ABC Traders", status: "Active", daysLeft: 15, dailyProfit: 1200, weeklyProfit: 8400, region: "North Zone", newCustomers: 8, existingCustomers: 45 },
-      { name: "XYZ Stores", status: "Expired", daysLeft: 0, dailyProfit: 800, weeklyProfit: 5600, region: "South Zone", newCustomers: 3, existingCustomers: 30 },
-      { name: "FreshMart", status: "Active", daysLeft: 22, dailyProfit: 1500, weeklyProfit: 10500, region: "West Zone", newCustomers: 12, existingCustomers: 60 },
-      { name: "City Grocers", status: "Active", daysLeft: 5, dailyProfit: 950, weeklyProfit: 6650, region: "East Zone", newCustomers: 5, existingCustomers: 25 },
-      { name: "SuperBazaar", status: "Active", daysLeft: 10, dailyProfit: 2000, weeklyProfit: 14000, region: "Central Zone", newCustomers: 15, existingCustomers: 80 }
+    let customers = [
+      { name: "ABC Traders", daysLeft: 15, dailyProfit: 1200, activationDate: "2025-08-10", plan: "Pro", contact: { email: "contact@abctraders.com", phone: "9876543210" }, language: "English", region: "North Zone", newCustomers: 8, existingCustomers: 45 },
+      { name: "XYZ Stores", daysLeft: 0, dailyProfit: 800, activationDate: "2024-08-22", plan: "Basic", contact: { email: "manager@xyz.com", phone: "9123456789" }, language: "Hindi", region: "South Zone", newCustomers: 3, existingCustomers: 30 },
+      { name: "FreshMart", daysLeft: 22, dailyProfit: 1500, activationDate: "2025-08-01", plan: "Premium", contact: { email: "info@freshmart.io", phone: "9988776655" }, language: "English", region: "West Zone", newCustomers: 12, existingCustomers: 60 },
+      { name: "City Grocers", daysLeft: 5, dailyProfit: 950, activationDate: "2025-07-28", plan: "Pro", contact: { email: "citygrocers@email.com", phone: "9876554321" }, language: "Marathi", region: "East Zone", newCustomers: 5, existingCustomers: 25 },
+      { name: "SuperBazaar", daysLeft: 28, dailyProfit: 2000, activationDate: "2025-07-25", plan: "Premium", contact: { email: "help@superbazaar.com", phone: "9112233445" }, language: "English", region: "Central Zone", newCustomers: 15, existingCustomers: 80 }
     ];
 
-    function loadCustomers(list = customers) {
-      const table = document.getElementById("customerTable");
-      table.innerHTML = "";
-      list.forEach(cust => {
-        table.innerHTML += `
-          <tr class="border-b hover:bg-gray-50">
-            <td class="p-3 text-blue-600 cursor-pointer" onclick="showDetails('${cust.name}')">${cust.name}</td>
-            <td class="p-3">
-              <span class="${cust.status === 'Active' ? 'text-green-600' : 'text-red-600'} font-medium">
-                ${cust.status}
-              </span>
-            </td>
-            <td class="p-3">${cust.daysLeft} days</td>
-            <td class="p-3">₹${cust.dailyProfit}</td>
-            <td class="p-3">₹${cust.weeklyProfit}</td>
-            <td class="p-3">
-              <button onclick="showDetails('${cust.name}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg">View</button>
-            </td>
-          </tr>
-        `;
-      });
+    let currentFilter = { status: 'all' };
+
+    // Function to get status based on days left
+    function getStatus(days) {
+        if (days <= 0) return { text: "Expired", color: "rose" };
+        if (days < 7) return { text: "Expiring Soon", color: "amber" };
+        return { text: "Active", color: "emerald" };
     }
 
-    function filterTable() {
-      const search = document.getElementById("searchInput").value.toLowerCase();
-      const filtered = customers.filter(c => c.name.toLowerCase().includes(search));
-      loadCustomers(filtered);
+    // Main render function
+    function renderCustomers() {
+        const grid = document.getElementById("customerGrid");
+        const search = document.getElementById("searchInput").value.toLowerCase();
+        grid.innerHTML = "";
+
+        const filteredList = customers.filter(cust => {
+            const status = getStatus(cust.daysLeft).text;
+            const matchesStatus = currentFilter.status === 'all' || status === currentFilter.status;
+            const matchesSearch = cust.name.toLowerCase().includes(search);
+            return matchesStatus && matchesSearch;
+        });
+        
+        if (filteredList.length === 0) {
+            grid.innerHTML = `<p class="md:col-span-3 text-center text-slate-500 py-8">No customers match the current filter.</p>`;
+        }
+
+        filteredList.forEach(cust => {
+            const status = getStatus(cust.daysLeft);
+            const weeklyProfit = cust.dailyProfit * 7;
+            
+            grid.innerHTML += `
+            <div class="bg-white shadow rounded-2xl p-5 flex flex-col">
+                <div class="flex justify-between items-start">
+                    <h3 class="font-bold text-slate-800">${cust.name}</h3>
+                    <span class="text-xs font-semibold px-2 py-1 bg-${status.color}-100 text-${status.color}-700 rounded-full">${status.text}</span>
+                </div>
+                <div class="text-xs text-slate-500 mb-4">${cust.plan} Plan</div>
+
+                <div class="grid grid-cols-3 gap-4 my-4 text-center">
+                    <div>
+                        <div class="text-xl font-bold text-slate-700">${cust.daysLeft}</div>
+                        <div class="text-xs text-slate-500">Days Left</div>
+                    </div>
+                    <div>
+                        <div class="text-xl font-bold text-emerald-600">₹${cust.dailyProfit.toLocaleString('en-IN')}</div>
+                        <div class="text-xs text-slate-500">Daily Profit</div>
+                    </div>
+                    <div>
+                        <div class="text-xl font-bold text-emerald-600">₹${weeklyProfit.toLocaleString('en-IN')}</div>
+                        <div class="text-xs text-slate-500">Weekly Profit</div>
+                    </div>
+                </div>
+
+                <div class="mt-auto border-t pt-4 flex items-center justify-between">
+                     <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Activated: ${new Date(cust.activationDate).toLocaleDateString('en-GB')}
+                     </div>
+                     <button onclick="showDetails('${cust.name}')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">View Details</button>
+                </div>
+            </div>
+            `;
+        });
+    }
+    
+    // Filter controller
+    function filterCustomers(filter = {}, buttonEl = null) {
+        currentFilter = { ...currentFilter, ...filter };
+        
+        if (buttonEl) {
+            document.querySelectorAll('#filter-buttons button').forEach(btn => {
+                btn.className = "bg-white text-slate-600 px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-slate-100";
+            });
+            buttonEl.className = "bg-indigo-600 text-white px-3 py-1.5 text-sm font-medium rounded-lg";
+        }
+        
+        renderCustomers();
     }
 
+    // Modal logic
     function showDetails(name) {
       const cust = customers.find(c => c.name === name);
       if (!cust) return;
+      
+      const weeklyProfit = cust.dailyProfit * 7;
+      const totalCustomers = cust.newCustomers + cust.existingCustomers;
 
       document.getElementById("modalCompanyName").textContent = cust.name;
+      document.getElementById("modalCompanyPlan").textContent = `${cust.plan} Plan`;
       document.getElementById("modalContent").innerHTML = `
-        <p><strong>Status:</strong> ${cust.status}</p>
-        <p><strong>Days Left:</strong> ${cust.daysLeft}</p>
-        <p><strong>Daily Profit:</strong> ₹${cust.dailyProfit}</p>
-        <p><strong>Weekly Profit:</strong> ₹${cust.weeklyProfit}</p>
-        <p><strong>Region:</strong> ${cust.region}</p>
-        <p><strong>New Customers:</strong> ${cust.newCustomers}</p>
-        <p><strong>Existing Customers:</strong> ${cust.existingCustomers}</p>
-        <p><strong>Marketing Suggestion:</strong> ${
-          cust.status === "Active" 
-          ? "Offer a weekend discount to boost sales."
-          : "Renew subscription to restart sales tracking."
-        }</p>
+        <div class="space-y-4">
+            <h4 class="font-semibold text-slate-600 border-b pb-2">Subscription Details</h4>
+            <div class="flex justify-between"><strong>Status:</strong> <span class="font-medium text-${getStatus(cust.daysLeft).color}-600">${getStatus(cust.daysLeft).text}</span></div>
+            <div class="flex justify-between"><strong>Days Left:</strong> <span>${cust.daysLeft}</span></div>
+            <div class="flex justify-between"><strong>Activation Date:</strong> <span>${new Date(cust.activationDate).toLocaleDateString('en-GB')}</span></div>
+            <h4 class="font-semibold text-slate-600 border-b pb-2 pt-4">Contact & Preferences</h4>
+            <div class="flex justify-between"><strong>Contact Email:</strong> <a href="mailto:${cust.contact.email}" class="text-indigo-600 hover:underline">${cust.contact.email}</a></div>
+            <div class="flex justify-between"><strong>Contact Phone:</strong> <span>${cust.contact.phone}</span></div>
+            <div class="flex justify-between"><strong>Language:</strong> <span>${cust.language}</span></div>
+        </div>
+        <div class="space-y-4">
+            <h4 class="font-semibold text-slate-600 border-b pb-2">Performance Metrics</h4>
+            <div class="flex justify-between"><strong>Daily Profit:</strong> <span class="font-semibold">₹${cust.dailyProfit.toLocaleString('en-IN')}</span></div>
+            <div class="flex justify-between"><strong>Est. Weekly Profit:</strong> <span class="font-semibold">₹${weeklyProfit.toLocaleString('en-IN')}</span></div>
+            <div class="flex justify-between"><strong>Total Customers:</strong> <span>${totalCustomers} (${cust.newCustomers} new)</span></div>
+            <div class="flex justify-between"><strong>Region:</strong> <span>${cust.region}</span></div>
+        </div>
       `;
+        
+      let suggestion = '';
+      if (getStatus(cust.daysLeft).text === "Expired") {
+          suggestion = `<strong>Suggestion:</strong> Contact ${cust.name} to discuss renewal options and offer a loyalty discount.`;
+      } else if (getStatus(cust.daysLeft).text === "Expiring Soon") {
+          suggestion = `<strong>Suggestion:</strong> Send a renewal reminder to ${cust.name}. Highlight their weekly profit to show value.`;
+      } else if(cust.plan !== 'Premium') {
+          suggestion = `<strong>Suggestion:</strong> ${cust.name} is on the ${cust.plan} plan. Propose an upgrade to 'Premium' to unlock more features.`;
+      } else {
+          suggestion = `<strong>Suggestion:</strong> Customer is active on the top plan. Consider sending a thank-you note or a small loyalty reward.`;
+      }
+      document.getElementById("modalSuggestion").innerHTML = suggestion;
+      
       document.getElementById("detailModal").classList.remove("hidden");
     }
 
@@ -125,7 +201,7 @@
       document.getElementById("detailModal").classList.add("hidden");
     }
 
-    loadCustomers();
+    window.onload = renderCustomers;
   </script>
 </body>
 </html>

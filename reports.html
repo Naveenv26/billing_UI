@@ -3,139 +3,165 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reports</title>
+  <title>Reports — Billing App</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="icon" href="https://angular.io/assets/images/logos/angular/angular.svg">
+  <style>
+    /* Custom Animation for Sidebar */
+    @keyframes slideIn { from { transform: translateX(-100%);} to { transform: translateX(0);} }
+    .slide-in { animation: slideIn .3s ease-out both }
+  </style>
 </head>
-<body class="bg-[#e6f0fa] min-h-screen font-sans flex flex-col">
+<body class="bg-slate-50 min-h-screen font-sans">
 
-  <!-- Navbar -->
-  <nav class="bg-white shadow p-4 flex justify-between items-center">
-    <div class="flex items-center space-x-3">
-      <img src="https://angular.io/assets/images/logos/angular/angular.svg" class="w-8 h-8" alt="Logo">
-      <span class="font-bold text-gray-800">Reports</span>
+  <div id="globalBar" class="bg-white/95 backdrop-blur sticky top-0 z-50 border-b border-slate-200">
+    <div class="max-w-screen-2xl mx-auto px-4 py-3 flex flex-wrap gap-2 items-center justify-between">
+      <div class="flex items-center gap-2">
+        <img src="https://angular.io/assets/images/logos/angular/angular.svg" class="w-8 h-8" alt="Logo">
+        <span class="font-bold text-slate-800 text-lg">Billing App — Customer</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="login.html" class="ml-2 text-rose-600 hover:underline font-medium">Logout</a>
+      </div>
     </div>
-    <a href="customer-dashboard.html" class="text-blue-500 font-medium hover:underline">⬅ Back</a>
-  </nav>
-
-  <!-- Title -->
-  <div class="bg-black text-white p-4 text-center">
-    <h1 class="text-2xl font-bold">Sales and Performance Reports</h1>
-    <p class="text-sm mt-2">Analyze your sales, product performance, customer engagement, and profitability.</p>
   </div>
 
-  <!-- Reports Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 max-w-7xl mx-auto">
-
-    <!-- Sales Reports (smaller) -->
-    <div class="bg-white shadow rounded-xl p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-3">Sales Reports</h2>
-      <div class="relative h-48"> <!-- fixed height container -->
-        <canvas id="salesReportChart" class="absolute inset-0"></canvas>
+  <div class="flex">
+    <aside id="sidebar" class="fixed md:sticky top-[56px] md:top-[64px] left-0 h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] w-72 -translate-x-full md:translate-x-0 md:w-64 bg-white border-r border-slate-200 z-40 md:z-30 md:block shadow md:shadow-none transition-transform duration-200">
+      <div class="h-full flex flex-col">
+        <div class="p-4 border-b border-slate-200">
+          <div class="text-sm text-slate-500">Navigation</div>
+        </div>
+        <nav class="p-3 space-y-1 overflow-y-auto">
+          <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">
+            📊 Dashboard
+          </a>
+          <a href="billing.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">
+            🧾 Billing
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 font-medium group">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 group-hover:scale-125 transition"></span>
+            Reports
+          </a>
+          <a href="stock.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">
+            📦 Stock
+          </a>
+          <div class="pt-3 mt-3 border-t border-slate-200">
+            <a href="home.html" class="w-full text-left px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow hover:shadow-md flex items-center gap-3">
+            🏠 Home
+            </a>
+          </div>
+        </nav>
+        <div class="mt-auto p-4 text-xs text-slate-500">© 2025 Sparkzen Billing</div>
       </div>
-    </div>
+    </aside>
 
-    <!-- Product Performance (smaller) -->
-    <div class="bg-white shadow rounded-xl p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-3">Product Performance</h2>
-      <div class="relative h-48">
-        <canvas id="productPerformanceChart" class="absolute inset-0"></canvas>
-      </div>
-    </div>
+    <div class="flex-1 md:pl-5 w-full" id="top">
+        <div class="md:hidden sticky top-[56px] z-40 bg-slate-50/80 backdrop-blur border-b border-slate-200">
+            <div class="px-4 py-3 flex items-center justify-between">
+                <button id="hamburger" class="p-2 rounded-lg border border-slate-300 bg-white shadow" aria-label="Open Menu">☰</button>
+                 <div class="text-lg font-bold text-slate-800">Reports</div>
+                <div class="flex items-center gap-3">
+                    <img class="w-8 h-8 rounded-full" src="https://i.pravatar.cc/64?img=5" alt="User"/>
+                </div>
+            </div>
+        </div>
 
-    <!-- Customer Reports (smaller) -->
-    <div class="bg-white shadow rounded-xl p-4">
-      <h2 class="text-lg font-semibold text-gray-700 mb-3">Customer Reports</h2>
-      <div class="relative h-48">
-        <canvas id="customerReportChart" class="absolute inset-0"></canvas>
-      </div>
-    </div>
+      <main class="max-w-4xl mx-auto p-6 space-y-8">
+        <div class="hidden md:block">
+          <h1 class="text-2xl font-bold text-slate-800">Reports Hub</h1>
+          <p class="text-sm text-slate-500">Select a category to view a detailed report.</p>
+        </div>
 
-    <!-- Profitability & Cost (bigger bar) -->
-    <div class="bg-white shadow rounded-xl p-4 ">
-      <h2 class="text-lg font-semibold text-gray-700 mb-3">Profitability & Cost</h2>
-      <div class="relative h-48"> <!-- bigger height -->
-        <canvas id="profitCostChart" class="absolute inset-0"></canvas>
-      </div>
-    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
+          <a href="sales-report.html" class="bg-white shadow-sm rounded-2xl p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 block">
+            <h2 class="text-lg font-semibold text-slate-700 mb-3">Sales Report</h2>
+            <div class="relative w-full h-72">
+              <canvas id="salesReportChart"></canvas>
+            </div>
+          </a>
+
+          <a href="customer-report.html" class="bg-white shadow-sm rounded-2xl p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 block">
+            <h2 class="text-lg font-semibold text-slate-700 mb-3">Customer Report</h2>
+             <div class="relative w-full h-72">
+              <canvas id="customerReportChart"></canvas>
+            </div>
+          </a>
+
+        </div>
+      </main>
+    </div>
   </div>
 
   <script>
-    // ---------- Helpers ----------
-    const chartColors = ["#3b82f6", "#f97316", "#10b981", "#f43f5e", "#a855f7", "#14b8a6"];
-    const rupee = n => '₹' + Number(n).toLocaleString('en-IN');
-
-    // prevent duplicate instances (and any re-init loops)
-    window._charts = window._charts || {};
-    function makeChart(id, config) {
-      if (window._charts[id]) window._charts[id].destroy();
-      const ctx = document.getElementById(id).getContext('2d');
-      const c = new Chart(ctx, {
-        ...config,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,   // fill the fixed-height container
-          resizeDelay: 150,             // debounce resize
-          animation: { duration: 400 },
-          plugins: { legend: { position: 'top', labels: { boxWidth: 12 } }, ...(config.options?.plugins || {}) },
-          scales: { ...(config.options?.scales || {}) }
-        }
+    /* =================== Sidebar (mobile) =================== */
+    const sidebar = document.getElementById('sidebar');
+    const hamburger = document.getElementById('hamburger');
+    if (hamburger) {
+      hamburger.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
       });
-      window._charts[id] = c;
-      return c;
     }
 
-    // ---------- Charts ----------
-    // Sales Reports - doughnut (small)
-    makeChart('salesReportChart', {
-      type: 'doughnut',
-      data: {
-        labels: ["Morning Sales", "Afternoon Sales", "Evening Sales"],
-        datasets: [{ data: [12000, 18000, 15000], backgroundColor: chartColors }]
-      }
+    /* =================== Chart.js Initialization =================== */
+    const chartColors = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#a855f7", "#14b8a6"];
+    
+    // Bar Chart Options
+    const barChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { 
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+            x: { grid: { display: false } }
+        },
+        plugins: { legend: { display: false } }
+    };
+
+    // Pie Chart Options
+    const pieChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { padding: 15, font: { size: 12 } }
+            }
+        }
+    };
+
+    // Sales - Bar Chart (Updated)
+    new Chart(document.getElementById("salesReportChart"), {
+      type: "bar",
+      data: { 
+        labels: ["Parle-G", "Lays", "Amul Milk", "Dairy Milk", "Maggi"], 
+        datasets: [{ 
+          label: "Quantity Sold", 
+          data: [120, 95, 80, 75, 60], 
+          backgroundColor: "rgba(79, 70, 229, 0.7)",
+          borderColor: "rgba(79, 70, 229, 1)",
+          borderWidth: 1,
+          borderRadius: 6
+        }] 
+      },
+      options: barChartOptions
     });
 
-    // Product Performance - polarArea (small)
-    makeChart('productPerformanceChart', {
-      type: 'polarArea',
-      data: {
-        labels: ["Biscuits", "Soft Drinks", "Chocolates", "Snacks"],
-        datasets: [{ data: [400, 350, 280, 150], backgroundColor: chartColors }]
-      }
-    });
-
-    // Customer Reports - pie (small)
-    makeChart('customerReportChart', {
-      type: 'pie',
-      data: {
-        labels: ["New Customers", "Returning Customers"],
-        datasets: [{ data: [120, 80], backgroundColor: chartColors }]
-      }
-    });
-
-    // Profitability & Cost - bar (bigger + clean legend)
-    makeChart('profitCostChart', {
-      type: 'bar',
-      data: {
-        labels: ["Profit", "Cost of Goods"],
-        datasets: [{
-          label: "Amount",
-          data: [65000, 35000],
-          backgroundColor: [chartColors[0], chartColors[1]],
-          
+    // Customer - Pie Chart
+    new Chart(document.getElementById("customerReportChart"), {
+      type: "pie",
+      data: { 
+        labels: ["New Customers", "Returning"],
+        datasets: [{ 
+            data: [120, 80], 
+            backgroundColor: ["#10b981", "#38bdf8"],
+            borderColor: '#ffffff',
+            borderWidth: 4,
+            hoverOffset: 8
         }]
       },
-      options: {
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => rupee(ctx.parsed.y) } }
-        },
-        scales: {
-          y: { beginAtZero: true, ticks: { callback: v => rupee(v) } }
-        }
-      }
+      options: pieChartOptions
     });
   </script>
 </body>

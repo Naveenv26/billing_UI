@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Customer Report</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Custom scrollbar for better aesthetics */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #ffffffff; }
+    ::-webkit-scrollbar-thumb { background: #efefefff; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #000000ff; }
+  </style>
+</head>
+<body class="bg-blue-50 min-h-screen font-sans">
+
+  <nav class="bg-white shadow sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center py-4">
+            <h1 class="font-bold text-2xl text-slate-800">Customer Visit Report</h1>
+            <a href="reports.html" class="text-sm font-medium text-slate-600 hover:text-yellow-600 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+                </svg>
+                Back to Reports
+            </a>
+        </div>
+    </div>
+  </nav>
+
+  <main class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+    <div class="bg-white shadow-md rounded-2xl p-6 mb-6">
+        <div class="flex flex-wrap items-center gap-4">
+            <div>
+                <label for="timespanSelector" class="block text-sm font-medium text-slate-600 mb-1">Report Type</label>
+                <select id="timespanSelector" class="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-200 focus:border-yellow-500 transition">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <div id="datePickerContainer">
+                <label for="reportDate" class="block text-sm font-medium text-slate-600 mb-1">Select Report Date</label>
+                <input type="date" id="reportDate" class="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-200 focus:border-yellow-500 transition">
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1 bg-white shadow-md rounded-2xl p-6">
+            <h2 id="chartTitle" class="text-xl font-semibold text-slate-800 mb-4 text-center">Customer Breakdown</h2>
+            <div class="h-80 mx-auto">
+                <canvas id="customerChart"></canvas>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 bg-white shadow-md rounded-2xl overflow-hidden">
+          <h2 id="tableTitle" class="text-xl font-semibold text-slate-800 p-6">Customer Details</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-slate-500">
+              <thead id="tableHeader" class="text-xs text-slate-700 uppercase bg-slate-100">
+                </thead>
+              <tbody id="customerTableBody">
+                </tbody>
+            </table>
+          </div>
+        </div>
+    </div>
+  </main>
+
+  <script>
+    const customerNames = [
+        "Aarav Sharma", "Vivaan Singh", "Aditya Kumar", "Vihaan Gupta", "Arjun Patel", "Sai Reddy", 
+        "Reyansh Mishra", "Ayaan Verma", "Krishna Yadav", "Ishaan Saini", "Diya Mehta", "Saanvi Joshi", 
+        "Aanya Choudhury", "Myra Agarwal", "Aarohi Iyer", "Ananya Rao", "Pari Das", "Ira Nair", 
+        "Riya Pillai", "Aadhya Menon"
+    ];
+
+    let customerChart;
+    const datePicker = document.getElementById('reportDate');
+    const timespanSelector = document.getElementById('timespanSelector');
+    const chartTitle = document.getElementById('chartTitle');
+    const tableTitle = document.getElementById('tableTitle');
+    const tableHeader = document.getElementById('tableHeader');
+    const datePickerContainer = document.getElementById('datePickerContainer');
+
+    function seededRandom(seed) {
+        let h = 1779033703 ^ seed.length;
+        for(let i = 0; i < seed.length; i++) {
+            h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
+            h = h << 13 | h >>> 19;
+        }
+        return function() {
+            h = Math.imul(h ^ h >>> 16, 2246822507);
+            h = Math.imul(h ^ h >>> 13, 3266489909);
+            return (h ^= h >>> 16) >>> 0;
+        }
+    }
+
+    // --- DATA GENERATION ---
+    function generateDailyData(dateStr) {
+        const rand = seededRandom(dateStr);
+        const activeCustomers = [];
+        customerNames.forEach(name => {
+            if (rand() % 10 > 3) {
+                const totalVisits = Math.floor((rand() / 4294967295) * 50) + 1;
+                const status = totalVisits > 1 ? 'Returning' : 'New';
+                const avgInterval = totalVisits > 1 ? Math.floor((rand() / 4294967295) * 25) + 2 : 'N/A';
+                activeCustomers.push({ name, totalVisits, avgInterval, status });
+            }
+        });
+        return activeCustomers;
+    }
+
+    function generateWeeklyData() {
+        const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        return days.map(day => ({
+            name: day,
+            new: Math.floor(Math.random() * 20) + 5,
+            returning: Math.floor(Math.random() * 50) + 20
+        }));
+    }
+
+    function generateMonthlyData() {
+        const weeks = ["Week 1", "Week 2", "Week 3", "Week 4"];
+        return weeks.map(week => ({
+            name: week,
+            new: Math.floor(Math.random() * 80) + 40,
+            returning: Math.floor(Math.random() * 200) + 150
+        }));
+    }
+
+    // --- UI & CHART RENDERING ---
+    function updateControls() {
+        datePickerContainer.style.display = timespanSelector.value === 'daily' ? 'block' : 'none';
+    }
+
+    function updateReport() {
+        const timespan = timespanSelector.value;
+        const dateStr = datePicker.value;
+        
+        let tableHeadersHTML = '', tableBodyHTML = '', chartData, chartConfig;
+        
+        if (timespan === 'daily') {
+            const dailyData = generateDailyData(dateStr);
+            chartTitle.textContent = 'Daily Customer Breakdown';
+            tableTitle.textContent = `Customer Details for ${dateStr}`;
+            tableHeadersHTML = `<tr><th scope="col" class="px-6 py-3">Customer Name</th><th scope="col" class="px-6 py-3 text-center">Total Visits</th><th scope="col" class="px-6 py-3 text-center">Avg. Interval (Days)</th><th scope="col" class="px-6 py-3 text-center">Status</th></tr>`;
+            
+            dailyData.forEach(customer => {
+                const statusColor = customer.status === 'New' ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800';
+                tableBodyHTML += `<tr class="bg-white border-b hover:bg-yellow-50"><th scope="row" class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">${customer.name}</th><td class="px-6 py-4 text-center">${customer.totalVisits}</td><td class="px-6 py-4 text-center">${customer.avgInterval}</td><td class="px-6 py-4 text-center"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">${customer.status}</span></td></tr>`;
+            });
+            if (dailyData.length === 0) tableBodyHTML = `<tr><td colspan="4" class="text-center p-8 text-slate-500">No customer activity on this date.</td></tr>`;
+            
+            const newCount = dailyData.filter(c => c.status === 'New').length;
+            const returningCount = dailyData.filter(c => c.status === 'Returning').length;
+            chartConfig = {
+                type: 'pie',
+                data: {
+                    labels: ["New Customers", "Returning Customers"],
+                    datasets: [{ data: [newCount, returningCount], backgroundColor: ["#34d399", "#38bdf8"], borderColor: '#ffffff', borderWidth: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 20 } } } }
+            };
+        } else { // Weekly or Monthly
+            const isWeekly = timespan === 'weekly';
+            const titlePrefix = isWeekly ? 'Weekly' : 'Monthly';
+            chartData = isWeekly ? generateWeeklyData() : generateMonthlyData();
+
+            chartTitle.textContent = `${titlePrefix} Customer Trends`;
+            tableTitle.textContent = `${titlePrefix} Customer Summary`;
+            tableHeadersHTML = `<tr><th scope="col" class="px-6 py-3">${isWeekly ? 'Day' : 'Week'}</th><th scope="col" class="px-6 py-3 text-center">New Customers</th><th scope="col" class="px-6 py-3 text-center">Returning Customers</th><th scope="col" class="px-6 py-3 text-center font-semibold">Total</th></tr>`;
+            
+            chartData.forEach(period => {
+                tableBodyHTML += `<tr class="bg-white border-b hover:bg-yellow-50"><th scope="row" class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">${period.name}</th><td class="px-6 py-4 text-center">${period.new}</td><td class="px-6 py-4 text-center">${period.returning}</td><td class="px-6 py-4 text-center font-semibold text-slate-800">${period.new + period.returning}</td></tr>`;
+            });
+
+            chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: chartData.map(d => d.name),
+                    datasets: [
+                        { label: 'New', data: chartData.map(d => d.new), backgroundColor: '#34d399' },
+                        { label: 'Returning', data: chartData.map(d => d.returning), backgroundColor: '#38bdf8' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            };
+        }
+        
+        tableHeader.innerHTML = tableHeadersHTML;
+        document.getElementById('customerTableBody').innerHTML = tableBodyHTML;
+        
+        if (customerChart) { customerChart.destroy(); }
+        customerChart = new Chart(document.getElementById('customerChart').getContext('2d'), chartConfig);
+    }
+
+    // --- EVENT LISTENERS & INITIAL LOAD ---
+    datePicker.addEventListener('change', updateReport);
+    timespanSelector.addEventListener('change', () => { updateControls(); updateReport(); });
+
+    const today = new Date().toISOString().split('T')[0];
+    datePicker.value = today;
+    updateControls();
+    updateReport();
+  </script>
+</body>
+</html>

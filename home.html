@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing App - Sparkzen Inspired</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    body {
+      background: #ffffff;
+      color: #001d3d;
+      overflow-x: hidden;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 40px;
+      background: #001d3d;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    header .logo {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #ff8800;
+    }
+    header .auth-btns button {
+      margin-left: 10px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #ff8800;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    header .auth-btns button:hover {
+      background: #ffa733;
+      color: #001d3d;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 100px 20px;
+      background: linear-gradient(135deg, #ff8800, #ffa733);
+      color: #fff;
+    }
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+    .hero p {
+      font-size: 1.2rem;
+      max-width: 650px;
+      margin: auto;
+    }
+
+    .about, .why-choose, .testimonials {
+      padding: 80px 40px;
+      text-align: center;
+    }
+    .about h2, .why-choose h2, .testimonials h2 {
+      font-size: 2rem;
+      color: #ff8800;
+      margin-bottom: 20px;
+    }
+    .about p, .why-choose p, .testimonials p {
+      max-width: 900px;
+      margin: auto;
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    .services {
+      padding: 80px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 60px;
+    }
+    .service-section {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 40px;
+    }
+    .service-section:nth-child(even) {
+      flex-direction: row-reverse;
+    }
+    .service-section img {
+      width: 45%;
+      min-width: 280px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      transition: transform 0.3s;
+    }
+    .service-section img:hover {
+      transform: scale(1.05);
+    }
+    .service-text {
+      flex: 1;
+      color: #333;
+    }
+    .service-text h3 {
+      color: #ff8800;
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+    }
+    .service-text p {
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .why-choose ul {
+      list-style: none;
+      max-width: 800px;
+      margin: 20px auto 0;
+      padding: 0;
+    }
+    .why-choose li {
+      margin: 10px 0;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    .testimonials .card {
+      background: #f9f9f9;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 600px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .testimonials .card h4 {
+      color: #001d3d;
+      margin-bottom: 10px;
+    }
+    .testimonials .card p {
+      font-style: italic;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      background: #001d3d;
+      margin-top: 50px;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">BillingPro</div>
+    <div class="auth-btns">
+      <button><a href="login.html">Login</a></button>
+      <button><a href="login.html">Signup</a></button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>Smart Billing, Simplified</h1>
+    <p>Manage invoices, track expenses, and handle payments with ease. Sparkzen-inspired solutions built for businesses of all sizes.</p>
+  </section>
+
+  <section class="about">
+    <h2>About Sparkzen</h2>
+    <p>Sparkzen is a leading provider of billing automation and business intelligence tools. Their mission is to simplify financial management with innovative technology that helps companies save time, reduce errors, and improve efficiency. Sparkzen’s platform supports businesses of all scales, from startups to large enterprises, delivering tools to make billing seamless and reliable.</p>
+  </section>
+
+  <section class="services">
+    <div class="service-section">
+      <img src="https://media.istockphoto.com/id/1362306415/photo/digital-invoice-online-using-computer-calculator.jpg?s=612x612&w=0&k=20&c=iMTj3rNVOrID9BvpfwKk9ovRPh9XiEFQQNYGH42QJqg=" alt="Smart Invoicing">
+      <div class="service-text">
+        <h3>Smart Invoicing</h3>
+        <p>Create and send invoices in minutes with customizable templates. Track real-time payment status, automate reminders, and reduce manual work. Sparkzen ensures invoices are professional, accurate, and always on time—helping you maintain healthy cash flow and client satisfaction.</p>
+      </div>
+    </div>
+
+    <div class="service-section">
+      <img src="https://www.modernanalyst.com/Portals/0/Public%20Uploads/writing-good-data-analysis-report-7-steps.png" alt="Analytics & Reports">
+      <div class="service-text">
+        <h3>Analytics & Reports</h3>
+        <p>Get detailed financial insights with interactive dashboards. Sparkzen’s analytics help identify trends, predict revenue, and monitor expenses. With data visualization tools, businesses can make informed decisions, optimize resources, and scale with confidence.</p>
+      </div>
+    </div>
+
+    <div class="service-section">
+      <img src="https://www.dckap.com/wp-content/uploads/2024/03/D-Blog.png" alt="Cloud Integration">
+      <div class="service-text">
+        <h3>Cloud Integration</h3>
+        <p>Access billing data from anywhere, anytime. Sparkzen’s secure cloud integration allows multiple team members to collaborate, update records, and share information instantly. With bank-level encryption, your financial data is always protected.</p>
+      </div>
+    </div>
+
+    <div class="service-section">
+      <img src="https://media.istockphoto.com/id/1340452442/vector/customer-support-department-staff-helping-a-client-via-hotline-call-to-solve-a-problem.jpg?s=612x612&w=0&k=20&c=b3HFZ1gkozVWKVENg4il-lqdj8hUfFQCYJemQ9UOnsg=" alt="Customer Support">
+      <div class="service-text">
+        <h3>24/7 Customer Support</h3>
+        <p>Dedicated support teams are available around the clock to resolve queries quickly. Whether it’s onboarding assistance or technical troubleshooting, Sparkzen’s experts ensure smooth operations without downtime for your business.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="why-choose">
+    <h2>Why Choose Sparkzen?</h2>
+    <p>We go beyond billing software. Sparkzen delivers an ecosystem designed to empower businesses:</p>
+    <ul>
+      <li>✔ Easy-to-use platform with a modern interface</li>
+      <li>✔ Scalable solutions for startups and enterprises</li>
+      <li>✔ Automated processes to save time and reduce costs</li>
+      <li>✔ Bank-grade data security for peace of mind</li>
+      <li>✔ Continuous updates and innovation</li>
+    </ul>
+  </section>
+
+  <section class="testimonials">
+    <h2>What Our Clients Say</h2>
+    <div class="card">
+      <h4>Rahul Sharma - CEO, FinTrack</h4>
+      <p>“Sparkzen transformed our billing process. What used to take hours now takes minutes. Highly recommended for any growing business.”</p>
+    </div>
+    <div class="card">
+      <h4>Ananya Patel - Founder, EduPlus</h4>
+      <p>“The analytics feature gave us real insights into our spending patterns. It has helped us scale confidently with data-driven decisions.”</p>
+    </div>
+  </section>
+
+  <footer>
+    © 2025 BillingPro | Powered by Sparkzen Inspired Design
+  </footer>
+
+</body>
+</html>

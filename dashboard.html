@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Billing Dashboard — Modern</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="icon" href="https://angular.io/assets/images/logos/angular/angular.svg">
+  <style>
+    /* ===== Custom Animations ===== */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px)} to { opacity:1; transform: translateY(0)} }
+    .fade-up { animation: fadeUp .5s ease-out both }
+
+    @keyframes slideIn { from { transform: translateX(-100%);} to { transform: translateX(0);} }
+    .slide-in { animation: slideIn .3s ease-out both }
+
+    /* Water (stock) meter */
+    .water-container { position: relative; width: 100%; height: 100px; border-radius: 50px; overflow: hidden; border: 4px solid #0f172a; background-color: #f0f9ff; }
+    .water-fill { position: absolute; left: 0; height: 100%; background: linear-gradient(90deg, #6366f1, #22c55e); animation: fillWaterHorizontal 2s ease-out forwards; width: var(--fill-level, 0%); }
+    @keyframes fillWaterHorizontal { from { width: 0%; } to { width: var(--fill-level); } }
+    .water-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.25rem; font-weight: 700; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
+
+    /* Subscription blocking overlay (does NOT cover global bar) */
+    .overlay { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 40; }
+    .overlay.show { display: flex; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+  <div id="globalBar" class="bg-white/95 backdrop-blur sticky top-0 z-50 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-3 items-center justify-between">
+      <div class="flex items-center gap-2">
+        <img src="https://angular.io/assets/images/logos/angular/angular.svg" class="w-8 h-8" alt="Logo">
+        <span class="font-bold text-slate-800 text-lg">Billing App — Customer</span>
+        <span id="countdownBadge" class="hidden ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+          Expires in <span id="countdownText" class="ml-1 font-semibold">—</span>
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap justify-end">
+         <div class="hidden md:flex items-center gap-2 border-r border-slate-200 pr-3">
+            <span class="text-sm font-medium text-slate-500">Demo State:</span>
+            <button onclick="setSubscriptionState(1)" class="bg-emerald-600 text-white px-3 py-2 rounded-lg hover:bg-emerald-700 shadow-sm focus:ring-2 focus:ring-emerald-300">Continue</button>
+            <button onclick="setSubscriptionState(2)" class="bg-amber-500 text-white px-3 py-2 rounded-lg hover:bg-amber-600 shadow-sm focus:ring-2 focus:ring-amber-300">Ends Soon</button>
+            <button onclick="setSubscriptionState(3)" class="bg-rose-600 text-white px-3 py-2 rounded-lg hover:bg-rose-700 shadow-sm focus:ring-2 focus:ring-rose-300">Ends</button>
+        </div>
+        
+        <button onclick="togglePlansModal(true)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg shadow focus:ring-2 focus:ring-indigo-300">Subscription</button>
+        <a href="login.html" class="text-rose-600 hover:underline font-medium focus:ring-2 focus:ring-rose-200 rounded-md px-2 py-1">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex">
+    <aside id="sidebar" class="fixed md:sticky top-[56px] md:top-[64px] left-0 h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] w-72 -translate-x-full md:translate-x-0 md:w-64 bg-white border-r border-slate-200 z-40 md:z-30 md:block shadow md:shadow-none transition-transform duration-200">
+      <div class="h-full flex flex-col">
+        <div class="p-4 border-b border-slate-200">
+          <div class="text-sm text-slate-500">Navigation</div>
+        </div>
+        <nav class="p-3 space-y-1 overflow-y-auto">
+          <a href="#top" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium group">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 group-hover:scale-125 transition"></span>
+            Dashboard
+          </a>
+          <a href="billing.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">
+            🧾 Billing
+          </a>
+          <a href="reports.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">
+            📊 Reports
+          </a>
+          <a href="stock.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">
+            📦 Stock
+          </a>
+          <div class="pt-3 mt-3 border-t border-slate-200">
+            <button class="w-full text-left px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow hover:shadow-md focus:ring-2 focus:ring-indigo-300"><a href="home.html">🏠 Home</a></button>
+          </div>
+        </nav>
+        <div class="mt-auto p-4 text-xs text-slate-500">© 2025 Sparkzen Billing</div>
+      </div>
+    </aside>
+
+    <div class="flex-1 md:pl-5 w-full" id="top">
+      <div class="md:hidden sticky top-[56px] z-30 bg-slate-50/80 backdrop-blur border-b border-slate-200">
+        <div class="px-4 py-3 flex items-center justify-between gap-3">
+          <button id="hamburger" class="p-2 rounded-lg border border-slate-300 bg-white shadow focus:ring-2 focus:ring-slate-300" aria-label="Open Menu">☰</button>
+          <div class="flex-1 min-w-0">
+             <input type="search" placeholder="Search invoices..." class="px-3 py-2 rounded-lg border border-slate-300 bg-white w-full focus:ring-2 focus:ring-indigo-300" />
+          </div>
+          <img class="w-8 h-8 rounded-full flex-shrink-0" src="https://i.pravatar.cc/64?img=12" alt="User"/>
+        </div>
+      </div>
+
+      <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-8">
+        <div class="hidden md:flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-800">Overview</h1>
+            <p class="text-sm text-slate-500">Track invoices, earnings and stock at a glance.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="search" placeholder="Search invoices..." class="px-3 py-2 rounded-xl border border-slate-300 bg-white w-72 focus:ring-2 focus:ring-indigo-300" />
+            <div class="flex items-center gap-2 bg-white border border-slate-200 px-3 py-2 rounded-xl shadow-sm">
+              <img class="w-9 h-9 rounded-full" src="https://i.pravatar.cc/64?img=5" alt="User"/>
+              <div class="text-sm">
+                <div class="font-semibold text-slate-700">Naveen</div>
+                <div class="text-slate-500">Admin</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white p-5 rounded-2xl shadow hover:shadow-md transition translate-y-0 hover:-translate-y-0.5 fade-up">
+            <div class="text-slate-500 text-sm">Total Invoices</div>
+            <div class="mt-2 text-3xl font-extrabold text-slate-800" id="cardTotal">—</div>
+            <div class="mt-1 text-xs text-slate-500" id="cardTotalAmt">—</div>
+          </div>
+          <div class="bg-white p-5 rounded-2xl shadow hover:shadow-md transition translate-y-0 hover:-translate-y-0.5 fade-up" style="animation-delay:.05s">
+            <div class="text-slate-500 text-sm">Paid</div>
+            <div class="mt-2 text-3xl font-extrabold text-emerald-700" id="cardPaid">—</div>
+            <div class="mt-1 text-xs text-slate-500" id="cardPaidAmt">—</div>
+          </div>
+          <div class="bg-white p-5 rounded-2xl shadow hover:shadow-md transition translate-y-0 hover:-translate-y-0.5 fade-up" style="animation-delay:.1s">
+            <div class="text-slate-500 text-sm">Unpaid / Overdue</div>
+            <div class="mt-2 text-3xl font-extrabold text-rose-700" id="cardUnpaid">—</div>
+            <div class="mt-1 text-xs text-slate-500" id="cardUnpaidAmt">—</div>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="bg-white rounded-2xl shadow p-4 lg:col-span-1">
+            <h2 class="text-lg font-semibold text-slate-700 mb-3">Invoice Status</h2>
+            <canvas id="invoiceStatusChart" height="220"></canvas>
+          </div>
+          <div class="bg-white rounded-2xl shadow p-4 lg:col-span-2">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-semibold text-slate-700">Recent Invoices</h2>
+              <div class="text-sm text-slate-500">(Dummy data)</div>
+            </div>
+            <div class="overflow-auto max-h-96 rounded-xl border border-slate-200">
+              <table class="min-w-full text-sm">
+                <thead class="bg-slate-100 text-slate-600 sticky top-0">
+                  <tr>
+                    <th class="text-left px-4 py-2">#</th>
+                    <th class="text-left px-4 py-2">Customer</th>
+                    <th class="text-left px-4 py-2">Date</th>
+                    <th class="text-right px-4 py-2">Amount</th>
+                    <th class="text-left px-4 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="invoiceTable" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white shadow rounded-2xl p-4">
+            <h2 class="text-lg font-semibold text-slate-700 mb-2">Most Sold Product</h2>
+            <p class="text-2xl font-bold text-indigo-600" id="mostSoldProduct">Loading...</p>
+          </div>
+          <div class="bg-white shadow rounded-2xl p-4">
+            <h2 class="text-lg font-semibold text-slate-700 mb-2">Total Earnings</h2>
+            <p class="text-2xl font-bold text-emerald-600" id="totalEarnings">₹0</p>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-1 gap-6 items-center">
+          <div class="flex justify-center">
+            <div class="water-container max-w-lg" id="stockMeter">
+              <div class="water-fill" id="waterFill" style="--fill-level:75%"></div>
+              <div class="water-text" id="waterText">75%</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="space-y-4">
+          <div class="flex items-center gap-3">
+            <h2 class="text-lg font-semibold text-slate-700">Reports</h2>
+            <label for="chartType" class="text-sm text-slate-500">Chart type:</label>
+            <select id="chartType" class="px-3 py-2 border border-slate-300 rounded-xl bg-white text-sm focus:ring-2 focus:ring-indigo-300" onchange="updateCharts(this.value)">
+              <option value="line" selected>Line</option>
+              <option value="bar">Bar</option>
+              <option value="pie">Pie</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white shadow rounded-2xl p-4">
+              <h3 class="text-base font-semibold text-slate-700 mb-2">Weekly Earnings (₹)</h3>
+              <canvas id="weeklySales" height="100"></canvas>
+            </div>
+            <div class="bg-white shadow rounded-2xl p-4">
+              <h3 class="text-base font-semibold text-slate-700 mb-2">Monthly Earnings (₹)</h3>
+              <canvas id="monthlySales" height="100"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow p-6 fade-up">
+          <h2 class="text-xl font-bold text-slate-800">About Sparkzen Billing</h2>
+          <p class="mt-2 text-slate-600 leading-relaxed">Sparkzen Billing is a lightweight, fast billing and stock management tool designed for retail and small businesses. Generate invoices in seconds, monitor inventory with live stock meters, and get useful insights with weekly and monthly earnings reports. Upgrade to Pro for advanced report customization and Premium for WhatsApp billing integration.</p>
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-xl border border-slate-200">
+              <div class="font-semibold text-slate-700">Key Services</div>
+              <ul class="mt-2 text-slate-600 text-sm list-disc list-inside space-y-1">
+                <li>Invoicing & Payment Tracking</li>
+                <li>Inventory & Stock Alerts</li>
+                <li>Reports: Line, Bar, Pie</li>
+              </ul>
+            </div>
+            <div class="p-4 rounded-xl border border-slate-200">
+              <div class="font-semibold text-slate-700">Why Choose Us</div>
+              <ul class="mt-2 text-slate-600 text-sm list-disc list-inside space-y-1">
+                <li>Clean UI & Fast Workflows</li>
+                <li>Reliable, Offline-friendly</li>
+                <li>Secure & Privacy-first</li>
+              </ul>
+            </div>
+            <div class="p-4 rounded-xl border border-slate-200">
+              <div class="font-semibold text-slate-700">Support</div>
+              <ul class="mt-2 text-slate-600 text-sm list-disc list-inside space-y-1">
+                <li>Email & Chat Support</li>
+                <li>Video Tutorials</li>
+                <li>Early Access Features</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="plansModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 w-[95%] max-w-5xl relative">
+      <button onclick="togglePlansModal(false)" class="absolute top-3 right-3 text-slate-500 hover:text-slate-700 focus:ring-2 focus:ring-slate-300 rounded-full p-1">✕</button>
+      <h2 class="text-2xl font-bold text-slate-800 mb-6 text-center">Choose Your Plan</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="border border-indigo-500 rounded-xl p-5 flex flex-col items-center shadow hover:shadow-lg transition bg-indigo-50">
+          <h3 class="text-xl font-bold text-slate-800">Basic</h3>
+          <p class="text-slate-500">₹99 / month</p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-700 list-disc list-inside">
+            <li>Billing Management</li>
+            <li>Weekly & Monthly Reports</li>
+            <li>Stock Maintenance</li>
+          </ul>
+          <button class="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-emerald-300">Select Basic</button>
+        </div>
+        <div class="border-2 border-indigo-600 rounded-xl p-5 flex flex-col items-center shadow-lg hover:shadow-xl transition">
+          <h3 class="text-xl font-bold text-slate-800">Pro</h3>
+          <p class="text-slate-500">₹199 / month</p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-700 list-disc list-inside">
+            <li>Everything in Basic</li>
+            <li>Advanced Report Customization</li>
+            <li>Choose report format: Pie, Bar, Line, etc.</li>
+            <li>Interactive Graphs & Data Insights</li>
+          </ul>
+          <button class="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-indigo-300">Select Pro</button>
+        </div>
+        <div class="border rounded-xl p-5 flex flex-col items-center shadow hover:shadow-lg transition">
+          <h3 class="text-xl font-bold text-slate-800">Premium</h3>
+          <p class="text-slate-500">₹249 / month</p>
+          <ul class="mt-4 space-y-2 text-sm text-slate-700 list-disc list-inside">
+            <li>Everything in Basic & Pro</li>
+            <li>WhatsApp Billing Integration</li>
+            <li>Upcoming Features & Early Access</li>
+          </ul>
+          <button class="mt-6 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-300">Select Premium</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="subscriptionOverlay" class="overlay p-4">
+    <div class="bg-white rounded-2xl p-6 w-[95%] max-w-md text-center shadow-2xl">
+      <h2 class="text-2xl font-bold text-rose-600">Subscription Expired</h2>
+      <p class="mt-2 text-slate-700">You cannot access the app because your subscription has ended.</p>
+      <p class="mt-1 text-slate-600">Renew to continue using all features.</p>
+      <div class="mt-5 grid gap-3 text-left">
+        <div class="border rounded-lg p-3"><p class="font-semibold">Basic</p><p class="text-slate-600">₹99 / month</p></div>
+        <div class="border rounded-lg p-3"><p class="font-semibold">Pro</p><p class="text-slate-600">₹199 / month</p></div>
+        <div class="border rounded-lg p-3"><p class="font-semibold">Premium</p><p class="text-slate-600">₹299 / month</p></div>
+      </div>
+      <button onclick="alert('This is a demo. Payment won\'t unlock until you change the global state.')" class="mt-5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-emerald-300">Renew Now</button>
+    </div>
+  </div>
+
+  <script>
+    /* =================== Demo Data =================== */
+    const stockPercent = 76; // stock level in %
+    const mostSold = { name: "Parle-G Biscuits", qty: 340 };
+    const earningsTotal = 125000; // total earnings
+
+    // Weekly earnings (Mon..Sun) in ₹
+    const weeklyEarnings = [8200, 10400, 9600, 11350, 15200, 17800, 13100];
+    // Monthly earnings (Jan..Dec) in ₹
+    const monthlyEarnings = [92000, 101500, 97500, 110000, 124500, 118000, 132500, 127000, 139500, 151000, 158500, 165000];
+
+    // Dummy invoices (25+ rows)
+    const statuses = ["Paid","Paid","Draft","Overdue","Unpaid"]; // weighted
+    function rand(min, max) { return Math.floor(Math.random()*(max-min+1))+min }
+    const customers = ["Aarav Stores","Meera Traders","Kumar & Co","FreshKart","City Mart","Elegant Fashion","Nexus Tech","Hari Pharma","Global Foods","BlueBerry Mart","QuickBuy","Shree Traders","Neo Retail","Hemant Tools","Arun Optics"]; 
+
+    const invoices = Array.from({ length: 28 }).map((_, i) => {
+      const amt = rand(1200, 9800) * 1;
+      const status = statuses[rand(0, statuses.length-1)];
+      const day = rand(1, 28);
+      const month = rand(1, 8);
+      const date = new Date(2025, month-1, day);
+      return {
+        no: `INV-${String(i+101).padStart(3,'0')}`,
+        customer: customers[rand(0, customers.length-1)],
+        date: date.toISOString().slice(0,10),
+        amount: amt,
+        status
+      };
+    });
+
+    /* =================== Init Cards =================== */
+    document.getElementById('mostSoldProduct').textContent = `${mostSold.name} (${mostSold.qty} sold)`;
+    document.getElementById('totalEarnings').textContent = `₹${earningsTotal.toLocaleString('en-IN')}`;
+
+    // Animate water fill
+    const fillElement = document.getElementById("waterFill");
+    fillElement.style.setProperty("--fill-level", stockPercent + "%");
+    document.getElementById("waterText").textContent = stockPercent + "%";
+
+    /* =================== Sidebar (mobile) =================== */
+    const sidebar = document.getElementById('sidebar');
+    const hamburger = document.getElementById('hamburger');
+    if (hamburger) {
+      hamburger.addEventListener('click', () => {
+        const isOpen = !sidebar.classList.contains('-translate-x-full');
+        if (isOpen) {
+          sidebar.classList.add('-translate-x-full');
+          sidebar.classList.remove('slide-in');
+        } else {
+          sidebar.classList.remove('-translate-x-full');
+          sidebar.classList.add('slide-in');
+        }
+      });
+    }
+
+    /* =================== Invoice Table =================== */
+    const tableBody = document.getElementById('invoiceTable');
+    const badge = (status) => {
+      const map = { Paid: 'bg-emerald-100 text-emerald-700', Draft: 'bg-slate-100 text-slate-700', Overdue: 'bg-rose-100 text-rose-700', Unpaid: 'bg-amber-100 text-amber-700' };
+      const cls = map[status] || 'bg-slate-100 text-slate-700';
+      return `<span class="px-2 py-1 rounded-full text-xs font-semibold ${cls}">${status}</span>`;
+    };
+
+    function rupee(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
+
+    tableBody.innerHTML = invoices.map((inv, idx) => `
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-2 font-medium text-slate-700">${inv.no}</td>
+        <td class="px-4 py-2 text-slate-700">${inv.customer}</td>
+        <td class="px-4 py-2 text-slate-600">${inv.date}</td>
+        <td class="px-4 py-2 text-right font-semibold">${rupee(inv.amount)}</td>
+        <td class="px-4 py-2">${badge(inv.status)}</td>
+      </tr>
+    `).join('');
+
+    // Cards summary
+    const totalCount = invoices.length;
+    const totalAmt = invoices.reduce((s, x) => s + x.amount, 0);
+    const paid = invoices.filter(x => x.status === 'Paid');
+    const unpaid = invoices.filter(x => x.status !== 'Paid');
+    const paidAmt = paid.reduce((s,x) => s + x.amount, 0);
+    const unpaidAmt = unpaid.reduce((s,x) => s + x.amount, 0);
+
+    document.getElementById('cardTotal').textContent = totalCount;
+    document.getElementById('cardTotalAmt').textContent = rupee(totalAmt) + ' total';
+    document.getElementById('cardPaid').textContent = paid.length;
+    document.getElementById('cardPaidAmt').textContent = rupee(paidAmt) + ' paid';
+    document.getElementById('cardUnpaid').textContent = unpaid.length;
+    document.getElementById('cardUnpaidAmt').textContent = rupee(unpaidAmt) + ' pending';
+
+    /* =================== Charts =================== */
+    let invoiceStatusChart, weeklyChart, monthlyChart;
+
+    function buildInvoiceStatusChart() {
+      const counts = { Paid:0, Draft:0, Overdue:0, Unpaid:0 };
+      invoices.forEach(i => counts[i.status] = (counts[i.status]||0)+1);
+      const ctx = document.getElementById('invoiceStatusChart').getContext('2d');
+      if (invoiceStatusChart) invoiceStatusChart.destroy();
+      invoiceStatusChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(counts),
+          datasets: [{
+            data: Object.values(counts),
+            backgroundColor: ['#10b981','#94a3b8','#f43f5e','#f59e0b'],
+            borderColor: '#fff',
+            borderWidth: 2
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { position:'bottom' } } }
+      });
+    }
+
+    const rupeeTick = (v) => '₹' + Number(v).toLocaleString('en-IN');
+
+    function createWeeklyChart(type) {
+      const ctx = document.getElementById('weeklySales').getContext('2d');
+      if (weeklyChart) weeklyChart.destroy();
+      weeklyChart = new Chart(ctx, {
+        type: type,
+        data: {
+          labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+          datasets: [{
+            label: "Earnings (₹)",
+            data: weeklyEarnings,
+            borderColor: "#6366f1",
+            backgroundColor: type === 'line' ? '#6366f133' : ['#818cf8', '#a5b4fc', '#c7d2fe', '#6366f1', '#4f46e5', '#4338ca', '#312e81'],
+            tension: 0.35,
+            fill: type === 'line'
+          }]
+        },
+        options: chartOptions(type)
+      });
+    }
+
+    function createMonthlyChart(type) {
+      const ctx = document.getElementById('monthlySales').getContext('2d');
+      if (monthlyChart) monthlyChart.destroy();
+      monthlyChart = new Chart(ctx, {
+        type: type,
+        data: {
+          labels: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+          datasets: [{
+            label: "Earnings (₹)",
+            data: monthlyEarnings,
+            borderColor: "#22c55e",
+            backgroundColor: type === 'line' ? '#22c55e33' : ['#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#166534', '#14532d', '#bbf7d0', '#f0fdf4', '#dcfce7', '#a7f3d0', '#6ee7b7'],
+            tension: 0.35,
+            fill: type === 'line'
+          }]
+        },
+        options: chartOptions(type)
+      });
+    }
+
+    function chartOptions(type) {
+      if (type === 'pie') {
+        return { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${rupeeTick(ctx.parsed)}` } } } };
+      }
+      return {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: rupeeTick } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `Earnings: ${rupeeTick(ctx.parsed.y)}` } }
+        }
+      };
+    }
+
+    function updateCharts(type) {
+      createWeeklyChart(type);
+      createMonthlyChart(type);
+    }
+
+    // Initialize charts
+    buildInvoiceStatusChart();
+    updateCharts('line');
+
+    /* =================== Subscription State Logic =================== */
+    // 1 = normal, 2 = about to end (countdown), 3 = ended (blocked)
+    let subscriptionState = 1;
+    let countdownInterval = null;
+    let expiryAt = null; // demo timer end time
+
+    const overlay = document.getElementById('subscriptionOverlay');
+    const globalBar = document.getElementById('globalBar');
+    const countdownBadge = document.getElementById('countdownBadge');
+    const countdownText = document.getElementById('countdownText');
+
+    function positionOverlay() {
+      const top = globalBar.getBoundingClientRect().height;
+      overlay.style.top = `${top}px`;
+    }
+    window.addEventListener('resize', positionOverlay);
+    window.addEventListener('load', positionOverlay);
+
+    function setSubscriptionState(state) {
+      subscriptionState = state;
+      if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+
+      if (state === 1) {
+        countdownBadge.classList.add('hidden');
+        overlay.classList.remove('show');
+      } else if (state === 2) {
+        alert("Demo: Your subscription will 'end' in 10 seconds. Renew to avoid interruption.");
+        expiryAt = Date.now() + 10_000; // demo 10s
+        countdownBadge.classList.remove('hidden');
+        overlay.classList.remove('show');
+        tickCountdown();
+        countdownInterval = setInterval(tickCountdown, 250);
+      } else if (state === 3) {
+        countdownBadge.classList.add('hidden');
+        positionOverlay();
+        overlay.classList.add('show');
+      }
+    }
+
+    function tickCountdown() {
+      const remainingMs = Math.max(0, expiryAt - Date.now());
+      const totalSec = Math.floor(remainingMs / 1000);
+      const secs = totalSec % 60;
+      const ms = Math.floor((remainingMs % 1000) / 100);
+      countdownText.textContent = `${secs}.${ms}s`;
+      if (remainingMs <= 0) { 
+        clearInterval(countdownInterval); 
+        countdownInterval = null; 
+        setSubscriptionState(3); 
+      }
+    }
+
+    function togglePlansModal(show) {
+      const modal = document.getElementById('plansModal');
+      modal.classList.toggle('hidden', !show);
+      modal.classList.toggle('flex', show);
+    }
+
+    // Initialize as Normal on load
+    setSubscriptionState(1);
+  </script>
+</body>
+</html>

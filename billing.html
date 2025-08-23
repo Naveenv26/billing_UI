@@ -1,245 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Billing</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Invoice — Billing App</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="https://angular.io/assets/images/logos/angular/angular.svg">
+  <style>
+    /* Add a subtle scrollbar style */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    /* Custom Animation for Sidebar */
+    @keyframes slideIn { from { transform: translateX(-100%);} to { transform: translateX(0);} }
+    .slide-in { animation: slideIn .3s ease-out both }
+
+    /* Print-Specific Styles */
+    @media print {
+      body > *:not(#billModal) { display: none !important; }
+      #billModal {
+        position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+        display: flex !important; justify-content: flex-start; align-items: flex-start;
+        background: white !important; backdrop-filter: none !important;
+      }
+      #printableBill {
+        box-shadow: none !important; border: 1px solid #ccc; margin: 0;
+        width: 100%; max-width: 100%; border-radius: 0;
+      }
+      #modal-actions { display: none !important; }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-slate-50 min-h-screen font-sans">
 
-  <!-- Navbar -->
-  <nav class="bg-white shadow p-4 flex justify-between items-center">
-    <div class="flex items-center space-x-3">
-      <span class="font-bold text-gray-800">Billing</span>
-    </div>
-    <div class="space-x-3">
-      <button onclick="showProducts()" class="bg-purple-500 text-white px-3 py-1 rounded-lg">Show Products</button>
-      <a href="customer-dashboard.html" class="text-blue-500 font-medium hover:underline">⬅ Back</a>
-    </div>
-  </nav>
-
-  <!-- Main -->
-  <main class="flex-1 p-6 space-y-6">
-
-    <!-- Search -->
-    <div class="flex space-x-2">
-      <input id="searchInput" type="text" placeholder="Search product..."
-        class="flex-1 border border-gray-300 rounded-lg px-4 py-2">
-      <button onclick="searchProduct()" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Search</button>
-    </div>
-
-    <!-- Search Results -->
-    <div id="searchResults" class="bg-white shadow rounded-lg p-4 hidden">
-      <h3 class="font-semibold text-gray-700 mb-2">Search Results</h3>
-      <ul id="resultsList" class="space-y-2"></ul>
-    </div>
-
-    <!-- Billing Table -->
-    <div class="bg-white shadow rounded-lg p-4">
-      <h3 class="font-semibold text-gray-700 mb-4">Billing List</h3>
-      <table class="w-full border-collapse">
-        <thead>
-          <tr class="bg-gray-100 text-gray-700">
-            <th class="p-3 text-left">Product</th>
-            <th class="p-3 text-left">Price</th>
-            <th class="p-3 text-left">Quantity</th>
-            <th class="p-3 text-left">Total</th>
-            <th class="p-3 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="billingTable"></tbody>
-      </table>
-      <div class="flex justify-end mt-4">
-        <span class="text-lg font-bold">Total: ₹<span id="grandTotal">0</span></span>
+  <div id="globalBar" class="bg-white/95 backdrop-blur sticky top-0 z-50 border-b border-slate-200">
+    <div class="max-w-screen-2xl mx-auto px-4 py-3 flex flex-wrap gap-2 items-center justify-between">
+      <div class="flex items-center gap-2">
+        <img src="https://angular.io/assets/images/logos/angular/angular.svg" class="w-8 h-8" alt="Logo">
+        <span class="font-bold text-slate-800 text-lg">Billing App — Customer</span>
       </div>
-      <div class="flex justify-end mt-2">
-        <button id="finalizeBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">Finalize Bill</button>
-      </div>
-    </div>
-  </main>
-
-  <!-- Products Modal -->
-  <div id="productsModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-96">
-      <h2 class="text-lg font-bold mb-4">Available Products</h2>
-      <table class="w-full border-collapse border border-gray-300">
-        <thead>
-          <tr class="bg-gray-100">
-            <th class="p-2 border">Name</th>
-            <th class="p-2 border">Qty</th>
-            <th class="p-2 border">Price</th>
-          </tr>
-        </thead>
-        <tbody id="productsTable"></tbody>
-      </table>
-      <div class="mt-4 text-right">
-        <button onclick="closeProductsModal()" class="bg-red-500 text-white px-4 py-2 rounded-lg">Close</button>
+      <div class="flex items-center gap-2">
+        <a href="login.html" class="ml-2 text-rose-600 hover:underline font-medium">Logout</a>
       </div>
     </div>
   </div>
 
-  <!-- Bill Modal -->
-  <div id="billModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-96">
-      <h2 class="text-lg font-bold mb-4">Final Bill</h2>
-      <div id="billDetails"></div>
-      <div class="mt-4 text-right">
-        <button onclick="closeBillModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Close</button>
+  <div class="flex">
+    <aside id="sidebar" class="fixed md:sticky top-[56px] md:top-[64px] left-0 h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] w-72 -translate-x-full md:translate-x-0 md:w-64 bg-white border-r border-slate-200 z-40 md:z-30 md:block shadow md:shadow-none transition-transform duration-200">
+      <div class="h-full flex flex-col">
+        <div class="p-4 border-b border-slate-200">
+          <div class="text-sm text-slate-500">Navigation</div>
+        </div>
+        <nav class="p-3 space-y-1 overflow-y-auto">
+          <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">📊 Dashboard</a>
+          <a href="billing.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">🧾 Billing</a>
+          <a href="reports.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">📈 Reports</a>
+          <a href="stock.html" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-indigo-50 text-slate-700 font-medium">📦 Stock</a>
+          <div class="pt-3 mt-3 border-t border-slate-200">
+            <a href="home.html" class="w-full text-left px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md flex items-center gap-3 font-semibold">
+              <span class="w-2 h-2 rounded-full bg-white/50 scale-125"></span>
+              🏠 Home</a>
+          </div>
+        </nav>
+        <div class="mt-auto p-4 text-xs text-slate-500">© 2025 Sparkzen Billing</div>
+      </div>
+    </aside>
+
+    <div class="flex-1 md:pl-5 w-full" id="top">
+        <div class="md:hidden sticky top-[56px] z-40 bg-slate-50/80 backdrop-blur border-b border-slate-200">
+            <div class="px-4 py-3 flex items-center justify-between">
+                <button id="hamburger" class="p-2 rounded-lg border border-slate-300 bg-white shadow" aria-label="Open Menu">☰</button>
+                <div class="text-lg font-bold text-slate-800">Create Bill</div>
+                <div class="flex items-center gap-3">
+                    <img class="w-8 h-8 rounded-full" src="https://i.pravatar.cc/64?img=5" alt="User"/>
+                </div>
+            </div>
+        </div>
+
+      <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        <div class="hidden md:block">
+          <h1 class="text-2xl font-bold text-slate-800">Create Bill</h1>
+          <p class="text-sm text-slate-500">Add products and generate a new invoice.</p>
+        </div>
+
+        <div class="bg-white shadow-md rounded-2xl p-6">
+          <h3 class="text-xl font-semibold text-slate-800 mb-4">Select Products</h3>
+          <input id="searchInput" type="text" placeholder="Search product by name..." onkeyup="renderProducts()"
+                 class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4 text-sm focus:ring-2 focus:ring-indigo-200">
+          <div id="productsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto pr-2">
+          </div>
+        </div>
+
+        <div id="billingItemsContainer" class="bg-white shadow-md rounded-2xl p-6 hidden">
+          <h3 class="text-xl font-semibold text-slate-800 mb-4">Billing Items</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="border-b"><tr class="text-slate-600"><th class="p-3 text-left font-medium">Product</th><th class="p-3 text-left font-medium">Price</th><th class="p-3 text-center font-medium">Quantity</th><th class="p-3 text-right font-medium">Total</th><th class="p-3 text-center font-medium">Actions</th></tr></thead>
+              <tbody id="billingTable" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="summaryContainer" class="bg-white shadow-md rounded-2xl p-6 hidden">
+          <h3 class="text-xl font-semibold text-slate-800 mb-4">Summary</h3>
+          <div class="space-y-4">
+            <div>
+              <h4 class="font-semibold text-slate-600 mb-2">Customer Details</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="customerName" class="text-sm font-medium text-slate-600">Customer Name</label>
+                  <input id="customerName" type="text" placeholder="e.g., Arun Kumar" class="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200">
+                </div>
+                <div>
+                  <label for="customerPhone" class="text-sm font-medium text-slate-600">Phone Number</label>
+                  <input id="customerPhone" type="tel" placeholder="e.g., 9876543210" class="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200">
+                </div>
+              </div>
+            </div>
+            <hr/>
+            <div class="flex justify-end">
+              <div class="w-full max-w-sm space-y-2 text-sm">
+                <div class="flex justify-between items-center"><span class="text-slate-600">Subtotal</span><span class="font-medium text-slate-800">₹<span id="subTotal">0.00</span></span></div>
+                
+                <div class="flex justify-between items-center">
+                  <label for="gstPercent" class="text-slate-600">GST (%)</label>
+                  <div class="flex items-center gap-2">
+                    <input id="gstPercent" type="number" value="18" class="w-16 border border-slate-300 rounded-md px-2 py-1 text-sm text-right focus:ring-2 focus:ring-indigo-200">
+                    <span class="font-medium text-slate-800 w-20 text-right">₹<span id="taxTotal">0.00</span></span>
+                  </div>
+                </div>
+                <div class="flex justify-between text-base font-bold text-slate-900 mt-2 pt-2 border-t"><span>Grand Total</span><span>₹<span id="grandTotal">0.00</span></span></div>
+              </div>
+            </div>
+            <div class="flex justify-end mt-4">
+              <button id="finalizeBtn" class="w-full md:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold px-6 py-3 rounded-lg shadow hover:shadow-lg transition">Generate Invoice</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="billModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center hidden z-[60] p-4">
+    <div id="printableBill" class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+      <div class="p-6 border-b"><h2 class="text-xl font-bold text-slate-800">Invoice</h2><p class="text-sm text-slate-500">Thank you for your purchase!</p></div>
+      <div id="billDetails" class="p-6 space-y-4 text-sm"></div>
+      <div id="modal-actions" class="p-4 bg-slate-50 rounded-b-2xl flex justify-end items-center gap-3">
+        <button onclick="window.print()" class="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Print Bill</button>
+        <button onclick="closeBillModal()" class="text-sm bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-100">Close</button>
       </div>
     </div>
   </div>
 
   <script>
+    const sidebar = document.getElementById('sidebar');
+    const hamburger = document.getElementById('hamburger');
+    if (hamburger) {
+      hamburger.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+    }
+
     let products = [
-      { name: "Lays", qty: 20, price: 5 },
-      { name: "Biscuit", qty: 50, price: 10 },
-      { name: "Icecream", qty: 38, price: 40 }
+        { id: 1, name: "Parle-G Gold", stock: 150, price: 10 }, { id: 2, name: "Lays Classic", stock: 80, price: 20 },
+        { id: 3, name: "Amul Gold Milk 1L", stock: 40, price: 70 }, { id: 4, name: "Cadbury Dairy Milk", stock: 120, price: 45 },
+        { id: 5, name: "Maggi Noodles Pack", stock: 95, price: 56 }, { id: 6, name: "Coca-Cola 750ml", stock: 60, price: 40 },
+        { id: 7, name: "Tata Salt 1kg", stock: 75, price: 25 }, { id: 8, name: "Cornetto Ice Cream", stock: 38, price: 50 },
+        { id: 9, name: "Nescafe Coffee 50g", stock: 55, price: 155 },
     ];
     let billingList = [];
+    const gstInput = document.getElementById('gstPercent');
+    const billingItemsContainer = document.getElementById('billingItemsContainer');
+    const summaryContainer = document.getElementById('summaryContainer');
 
-    function searchProduct() {
-      const term = document.getElementById("searchInput").value.trim().toLowerCase();
-      const results = products.filter(p => p.name.toLowerCase().includes(term) && p.qty > 0);
-      const resultsList = document.getElementById("resultsList");
-      resultsList.innerHTML = "";
-
-      if (results.length > 0) {
-        document.getElementById("searchResults").classList.remove("hidden");
-        results.forEach(p => {
-          resultsList.innerHTML += `
-            <li class="flex justify-between items-center border p-2 rounded-lg">
-              <span>${p.name} (₹${p.price}) - Stock: ${p.qty}</span>
-              <button onclick="addToBilling('${p.name}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg">Add</button>
-            </li>
-          `;
+    function renderProducts() {
+      const searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
+      const listEl = document.getElementById("productsList");
+      const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchTerm));
+      listEl.innerHTML = "";
+      if (filteredProducts.length > 0) {
+        filteredProducts.forEach(p => {
+          const billItem = billingList.find(item => item.id === p.id);
+          const stockLeft = p.stock - (billItem ? billItem.qty : 0);
+          const isOutOfStock = stockLeft <= 0;
+          listEl.innerHTML += `
+          <div onclick="${isOutOfStock ? '' : `addToBilling(${p.id})`}" 
+               class="border border-slate-200 p-3 rounded-lg text-center 
+                      ${isOutOfStock ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'cursor-pointer hover:bg-indigo-50 hover:border-indigo-200 transition-all'}">
+              <div class="font-semibold text-slate-700 text-sm">${p.name}</div>
+              <div class="text-xs text-slate-500 mt-1">₹${p.price.toFixed(2)} • Stock: <span class="${stockLeft <= 5 ? 'text-red-500 font-semibold' : ''}">${stockLeft}</span></div>
+          </div>`;
         });
       } else {
-        document.getElementById("searchResults").classList.remove("hidden");
-        resultsList.innerHTML = `<li class="text-gray-500">No products found or out of stock.</li>`;
+        listEl.innerHTML = `<p class="text-center text-slate-500 py-4 col-span-full">No products found.</p>`;
       }
     }
 
-    function showProducts() {
-      const table = document.getElementById("productsTable");
-      table.innerHTML = products.map(p => `
-        <tr>
-          <td class="p-2 border">${p.name}</td>
-          <td class="p-2 border">${p.qty}</td>
-          <td class="p-2 border">₹${p.price}</td>
-        </tr>
-      `).join("");
-      document.getElementById("productsModal").classList.remove("hidden");
-    }
-
-    function closeProductsModal() {
-      document.getElementById("productsModal").classList.add("hidden");
-    }
-
-    function addToBilling(productName) {
-      const product = products.find(p => p.name === productName);
-      if (!product || product.qty <= 0) return;
-
-      const existing = billingList.find(item => item.name === productName);
-      if (existing) {
-        if (existing.qty < product.qty) existing.qty++;
+    function addToBilling(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      const existingItem = billingList.find(item => item.id === productId);
+      if (existingItem) {
+        if (existingItem.qty < product.stock) existingItem.qty++;
       } else {
-        billingList.push({ name: product.name, price: product.price, qty: 1 });
+        billingList.push({ ...product, qty: 1 });
       }
-      renderBilling();
+      renderAll();
+    }
+    
+    function directUpdateQty(index, newValue) {
+      const billItem = billingList[index];
+      const product = products.find(p => p.id === billItem.id);
+      let newQty = parseInt(newValue);
+      if (isNaN(newQty) || newQty < 1) newQty = 1;
+      if (newQty > product.stock) newQty = product.stock;
+      billingList[index].qty = newQty;
+      renderAll();
     }
 
     function updateQty(index, change) {
-      const product = products.find(p => p.name === billingList[index].name);
-      if (change > 0 && billingList[index].qty < product.qty) {
-        billingList[index].qty++;
-      } else if (change < 0 && billingList[index].qty > 1) {
-        billingList[index].qty--;
+      const billItem = billingList[index];
+      const product = products.find(p => p.id === billItem.id);
+      const newQty = billItem.qty + change;
+      if (newQty > 0 && newQty <= product.stock) {
+        billingList[index].qty = newQty;
       }
-      renderBilling();
+      renderAll();
     }
 
     function removeItem(index) {
       billingList.splice(index, 1);
-      renderBilling();
+      renderAll();
     }
 
     function renderBilling() {
       const table = document.getElementById("billingTable");
-      table.innerHTML = "";
-      let total = 0;
+      table.innerHTML = ""; 
 
+      if (billingList.length > 0) {
+        billingItemsContainer.classList.remove('hidden');
+        summaryContainer.classList.remove('hidden');
+      } else {
+        billingItemsContainer.classList.add('hidden');
+        summaryContainer.classList.add('hidden');
+      }
+      
       billingList.forEach((item, idx) => {
+        const product = products.find(p => p.id === item.id);
+        if (!product) return; 
         const rowTotal = item.price * item.qty;
-        total += rowTotal;
         table.innerHTML += `
-          <tr class="border-b">
-            <td class="p-3">${item.name}</td>
-            <td class="p-3">₹${item.price}</td>
-            <td class="p-3 flex items-center space-x-2">
-              <button onclick="updateQty(${idx}, -1)" class="bg-gray-300 px-2 rounded-lg">-</button>
-              <span>${item.qty}</span>
-              <button onclick="updateQty(${idx}, 1)" class="bg-gray-300 px-2 rounded-lg">+</button>
-            </td>
-            <td class="p-3">₹${rowTotal}</td>
-            <td class="p-3">
-              <button onclick="removeItem(${idx})" class="bg-red-500 text-white px-3 py-1 rounded-lg">Remove</button>
-            </td>
-          </tr>
-        `;
+        <tr class="border-b border-slate-100"><td class="p-3 font-medium text-slate-800">${item.name}</td><td class="p-3 text-slate-600">₹${item.price.toFixed(2)}</td><td class="p-3"><div class="flex items-center justify-center space-x-2"><button onclick="updateQty(${idx}, -1)" class="bg-slate-200 h-7 w-7 rounded-md text-slate-700 font-bold hover:bg-slate-300">-</button><input type="number" value="${item.qty}" min="1" max="${product.stock}" onchange="directUpdateQty(${idx}, this.value)" class="w-16 h-7 text-center font-medium border border-slate-200 rounded-md focus:ring-2 focus:ring-indigo-200 focus:outline-none"><button onclick="updateQty(${idx}, 1)" class="bg-slate-200 h-7 w-7 rounded-md text-slate-700 font-bold hover:bg-slate-300">+</button></div></td><td class="p-3 text-right font-semibold text-slate-800">₹${rowTotal.toFixed(2)}</td><td class="p-3 text-center"><button onclick="removeItem(${idx})" class="text-red-500 hover:text-red-700" title="Remove Item"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button></td></tr>`;
       });
+      calculateTotals(); 
+    }
 
-      document.getElementById("grandTotal").textContent = total;
+    // NEW: Function to handle all total calculations
+    function calculateTotals() {
+      let subTotal = billingList.reduce((acc, item) => acc + (item.price * item.qty), 0);
+      let gstPercent = parseFloat(gstInput.value) || 0;
+      
+      // Update the GST label to show the current percentage
+      document.querySelector('label[for="gstPercent"]').textContent = `GST (${gstPercent}%)`;
+
+      const tax = subTotal * (gstPercent / 100);
+      const grandTotal = subTotal + tax;
+      document.getElementById("subTotal").textContent = subTotal.toFixed(2);
+      document.getElementById("taxTotal").textContent = tax.toFixed(2);
+      document.getElementById("grandTotal").textContent = grandTotal.toFixed(2);
+    }
+    
+    function renderAll() {
+      renderBilling();
+      renderProducts();
     }
 
     document.getElementById("finalizeBtn").addEventListener("click", () => {
-      if (!billingList.length) return alert("No items in billing list");
-
-      products.forEach(p => {
-        const soldItem = billingList.find(b => b.name === p.name);
-        if (soldItem) p.qty -= soldItem.qty;
-      });
-
+      const customerName = document.getElementById('customerName').value.trim();
+      if (!billingList.length) return alert("Please add items to the bill.");
+      if (!customerName) return alert("Please enter the customer's name.");
       showBillModal();
-
-      setTimeout(() => {
-        billingList = [];
-        renderBilling();
-      }, 500);
+      
+      billingList.forEach(soldItem => {
+        const product = products.find(p => p.id === soldItem.id);
+        if (product) product.stock -= soldItem.qty;
+      });
+      
+      document.getElementById('customerName').value = '';
+      document.getElementById('customerPhone').value = '';
+      billingList = [];
+      renderAll();
     });
+    
+    function generateInvoiceNumber() { return `INV-${Date.now().toString().slice(-6)}`; }
 
     function showBillModal() {
       const billDetails = document.getElementById("billDetails");
-      const total = billingList.reduce((sum, item) => sum + (item.price * item.qty), 0);
-      billDetails.innerHTML = `
-        <table class="w-full border-collapse border">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="p-2 border">Product</th>
-              <th class="p-2 border">Qty</th>
-              <th class="p-2 border">Price</th>
-              <th class="p-2 border">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${billingList.map(item => `
-              <tr>
-                <td class="p-2 border">${item.name}</td>
-                <td class="p-2 border">${item.qty}</td>
-                <td class="p-2 border">₹${item.price}</td>
-                <td class="p-2 border">₹${item.price * item.qty}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="text-right font-bold mt-4">Grand Total: ₹${total}</div>
-      `;
+      const subTotal = billingList.reduce((acc, item) => acc + (item.price * item.qty), 0);
+      const gstPercent = parseFloat(gstInput.value) || 0;
+      const tax = subTotal * (gstPercent / 100);
+      const grandTotal = subTotal + tax;
+      const invoiceNumber = generateInvoiceNumber();
+      const date = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      const customerName = document.getElementById('customerName').value.trim();
+      const customerPhone = document.getElementById('customerPhone').value.trim();
+
+      billDetails.innerHTML = `<div class="flex justify-between items-baseline"><div><div class="font-bold text-slate-800">${invoiceNumber}</div><div class="text-slate-500">Date: ${date}</div></div><div class="text-right"><div class="font-semibold text-slate-800">${customerName}</div><div class="text-slate-500">${customerPhone}</div></div></div><table class="w-full text-left mt-4"><thead><tr class="bg-slate-100 text-slate-600"><th class="p-2 rounded-l-lg">Product</th><th class="p-2 text-center">Qty</th><th class="p-2 text-right rounded-r-lg">Total</th></tr></thead><tbody class="divide-y divide-slate-100">${billingList.map(item => `<tr><td class="p-2">${item.name}</td><td class="p-2 text-center">${item.qty}</td><td class="p-2 text-right">₹${(item.price * item.qty).toFixed(2)}</td></tr>`).join("")}</tbody></table><div class="mt-4 pt-4 border-t text-right space-y-1"><div class="flex justify-between"><span class="text-slate-600">Subtotal:</span> <span>₹${subTotal.toFixed(2)}</span></div><div class="flex justify-between"><span class="text-slate-600">GST (${gstPercent}%):</span> <span>₹${tax.toFixed(2)}</span></div><div class="flex justify-between font-bold text-lg"><span class="text-slate-800">Grand Total:</span> <span>₹${grandTotal.toFixed(2)}</span></div></div>`;
       document.getElementById("billModal").classList.remove("hidden");
     }
 
     function closeBillModal() {
       document.getElementById("billModal").classList.add("hidden");
     }
+    
+    // NEW: Add event listener to recalculate totals when GST value changes
+    gstInput.addEventListener('input', calculateTotals);
+
+    window.onload = () => {
+      renderAll();
+    };
   </script>
 </body>
 </html>
