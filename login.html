@@ -48,7 +48,6 @@
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const pass = document.getElementById('password').value.length;
-      console.log(pass);
       if(pass <8){
         return alert("password must be 8 characters");
       }
@@ -64,5 +63,6 @@
   </script>
 </body>
 </html>
+
 
 
